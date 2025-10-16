@@ -315,13 +315,16 @@ def auto_detect_mapping(filename: str):
     mapping_patterns = {
         'contact': 'contacts',
         'candidate': 'contacts',
-        'form submission': 'form_submission',  # Match "form submissions" or "form_submission"
+        'form submission': 'form_submission',
+        'placement history': 'placement_history_events',  # Match "Placement History Daily Report"
+        'job applicant history': 'job_applicant_history_events',  # Match "Job Applicant History"
         'job_applicant_history': 'job_applicant_history_events',
         'job_applicant': 'job_applicants',
         'applicant': 'job_applicants',
         'contacts_with_jobs': 'contacts_with_jobs_joined',
+        'contacts with jobs': 'contacts_with_jobs_joined',  # Match with spaces
         'jobs_and_placement': 'jobs_and_placement',
-        'placement_history': 'placement_history_events',
+        'jobs and placement': 'jobs_and_placement',  # Match with spaces
     }
     
     for pattern, mapping_file in mapping_patterns.items():
