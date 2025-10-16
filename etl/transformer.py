@@ -38,7 +38,7 @@ class CSVTransformer:
                 raise ValueError("CSV file has no headers")
             
             mapped_headers = self._map_headers(reader.fieldnames)
-            mapped_headers.extend(['_partition_date', '_file_name', '_source_report', '_extract_ts'])
+            mapped_headers.extend(['_partition_date', '_file_name', '_source_report', '_extract_ts', '_mapping_version', '_raw_hash'])
             
             with open(output_file, 'w', encoding='utf-8', newline='') as outfile:
                 writer = csv.DictWriter(outfile, fieldnames=mapped_headers)
@@ -81,6 +81,8 @@ class CSVTransformer:
         transformed['_file_name'] = file_name
         transformed['_source_report'] = source_report
         transformed['_extract_ts'] = datetime.now().isoformat()
+        transformed['_mapping_version'] = None  # TODO: Add version tracking
+        transformed['_raw_hash'] = None  # TODO: Add row hashing for deduplication
         
         return transformed
     
