@@ -1,6 +1,6 @@
 source_report: "Jobs and Placements"
 target_object: "jobs_and_placements"
-natural_key: ["job_sfid"]
+natural_key: ["job_sfid", "placement_sfid"]  # Composite key: one row per job-placement pair
 
 partition:
   from_load_date: true        # snapshot partition; use last_modified_at for CDC
