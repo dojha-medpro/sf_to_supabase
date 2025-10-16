@@ -119,7 +119,11 @@ def upload_file():
         
         update_progress(load_id, 'Running QA validation', 10)
         validator = QAValidator(mapping)
-        is_valid, errors, stats = validator.validate_file(str(upload_path))
+        
+        def validation_progress(percent, message):
+            update_progress(load_id, message, percent)
+        
+        is_valid, errors, stats = validator.validate_file(str(upload_path), progress_callback=validation_progress)
         
         if not is_valid:
             quarantine_path = QUARANTINE_FOLDER / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
