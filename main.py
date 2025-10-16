@@ -33,6 +33,37 @@ def index():
     return render_template('index.html', mappings=mappings)
 
 
+def update_progress(load_id: int, stage: str, progress: int):
+    """Update progress for a load."""
+    import psycopg2
+    conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE load_history 
+        SET current_stage = %s, progress_percent = %s
+        WHERE id = %s
+    """, (stage, progress, load_id))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+def create_load_record(filename: str, mapping_name: str, partition_date_str: str, target_table: str) -> int:
+    """Create initial load record and return load_id."""
+    import psycopg2
+    conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO load_history 
+        (load_date, target_table, file_name, mapping_file, status, current_stage, progress_percent, started_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
+    """, (partition_date_str, target_table, filename, mapping_name, 'running', 'Starting upload', 0, datetime.now()))
+    load_id = cursor.fetchone()[0]
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return load_id
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     """Handle CSV file upload and processing."""
@@ -61,13 +92,19 @@ def upload_file():
     
     filename = secure_filename(file.filename)
     upload_path = UPLOAD_FOLDER / filename
+    
+    mapping = mapper.load_mapping(mapping_name)
+    target_table = mapper.get_target_table(mapping)
+    
+    load_id = create_load_record(filename, mapping_name, partition_date_str, target_table)
+    
+    update_progress(load_id, 'Uploading file', 5)
     file.save(upload_path)
     
     try:
-        mapping = mapper.load_mapping(mapping_name)
-        target_table = mapper.get_target_table(mapping)
         source_report = mapping.get('source_report', 'Unknown')
         
+        update_progress(load_id, 'Running QA validation', 10)
         validator = QAValidator(mapping)
         is_valid, errors, stats = validator.validate_file(str(upload_path))
         
@@ -75,11 +112,13 @@ def upload_file():
             quarantine_path = QUARANTINE_FOLDER / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
             shutil.move(upload_path, quarantine_path)
             
+            update_progress(load_id, 'Failed: QA validation errors', 100)
             error_report = '\n'.join(errors)
             notifier.notify_failure(filename, f"QA validation failed: {error_report}", str(quarantine_path))
             flash(f'❌ QA validation failed. File quarantined.\n\nErrors:\n{error_report}', 'error')
             return redirect(url_for('index'))
         
+        update_progress(load_id, 'Transforming data', 30)
         transformer = CSVTransformer(mapping)
         transformed_path = UPLOAD_FOLDER / f"transformed_{filename}"
         
@@ -90,6 +129,8 @@ def upload_file():
             filename,
             source_report
         )
+        
+        update_progress(load_id, 'Loading to Supabase', 50)
         
         if transform_errors:
             flash(f'⚠️ Transformation warnings: {len(transform_errors)} errors', 'warning')
@@ -105,6 +146,7 @@ def upload_file():
         upload_path.unlink(missing_ok=True)
         transformed_path.unlink(missing_ok=True)
         
+        update_progress(load_id, 'Complete', 100)
         notifier.notify_success(filename, loaded_rows, target_table)
         flash(f'✅ Successfully loaded {loaded_rows} rows to {target_table}', 'success')
         flash(f'📊 Statistics: {stats["total_rows"]} rows processed', 'info')
@@ -158,6 +200,39 @@ def api_mappings():
     """API endpoint to get available mappings."""
     mappings = mapper.get_available_mappings()
     return jsonify(mappings)
+
+
+@app.route('/api/progress/<int:load_id>')
+def api_progress(load_id):
+    """API endpoint to get progress for a specific load."""
+    import psycopg2
+    try:
+        conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT status, current_stage, progress_percent, rows_loaded, error_message
+            FROM load_history
+            WHERE id = %s
+        """, (load_id,))
+        
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if result:
+            return jsonify({
+                'status': result[0],
+                'stage': result[1] or 'Processing',
+                'progress': result[2] or 0,
+                'rows_loaded': result[3],
+                'error_message': result[4]
+            })
+        else:
+            return jsonify({'error': 'Load not found'}), 404
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

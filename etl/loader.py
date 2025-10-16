@@ -43,11 +43,15 @@ class BulkLoader:
         load_id = self._start_load(cursor, load_date, table_name, file_name, mapping_file)
         
         try:
+            self._update_progress(cursor, load_id, 'Loading to database', 25)
+            
             with open(csv_file, 'r', encoding='utf-8') as f:
                 copy_query = sql.SQL("COPY {} FROM STDIN WITH CSV HEADER DELIMITER ','").format(
                     sql.Identifier(*table_name.split('.'))
                 )
                 cursor.copy_expert(copy_query.as_string(cursor), f)
+            
+            self._update_progress(cursor, load_id, 'Counting rows', 75)
             
             count_query = sql.SQL("SELECT COUNT(*) FROM {} WHERE _file_name = %s").format(
                 sql.Identifier(*table_name.split('.'))
@@ -56,6 +60,7 @@ class BulkLoader:
             result = cursor.fetchone()
             row_count = result[0] if result else 0
             
+            self._update_progress(cursor, load_id, 'Finalizing', 90)
             self._complete_load(cursor, load_id, row_count, 'success')
             
             cursor.close()
@@ -74,15 +79,23 @@ class BulkLoader:
         """Record load start in load_history."""
         cursor.execute("""
             INSERT INTO load_history 
-            (load_date, target_table, file_name, mapping_file, status, started_at)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            (load_date, target_table, file_name, mapping_file, status, current_stage, progress_percent, started_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
-        """, (load_date, table_name, file_name, mapping_file, 'running', datetime.now()))
+        """, (load_date, table_name, file_name, mapping_file, 'running', 'Loading to database', 0, datetime.now()))
         
         result = cursor.fetchone()
         if not result:
             raise RuntimeError("Failed to create load_history record")
         return result[0]
+    
+    def _update_progress(self, cursor, load_id: int, stage: str, progress: int):
+        """Update progress in load_history."""
+        cursor.execute("""
+            UPDATE load_history 
+            SET current_stage = %s, progress_percent = %s
+            WHERE id = %s
+        """, (stage, progress, load_id))
     
     def _complete_load(self, cursor, load_id: int, rows_loaded: int, 
                       status: str, error_message: Optional[str] = None):
