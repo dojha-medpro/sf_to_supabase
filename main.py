@@ -281,7 +281,7 @@ def auto_detect_mapping(filename: str):
     mapping_patterns = {
         'contact': 'contacts.yaml',
         'candidate': 'contacts.yaml',
-        'form_submission': 'form_submission.yaml',
+        'form submission': 'form_submission.yaml',  # Match "form submissions" or "form_submission"
         'job_applicant_history': 'job_applicant_history_events.yaml',
         'job_applicant': 'job_applicants.yaml',
         'applicant': 'job_applicants.yaml',
