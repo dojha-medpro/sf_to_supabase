@@ -58,7 +58,10 @@ def create_load_record(filename: str, mapping_name: str, partition_date_str: str
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
     """, (partition_date_str, target_table, filename, mapping_name, 'running', 'Starting upload', 0, datetime.now()))
-    load_id = cursor.fetchone()[0]
+    result = cursor.fetchone()
+    if not result:
+        raise RuntimeError("Failed to create load_history record")
+    load_id = result[0]
     conn.commit()
     cursor.close()
     conn.close()
@@ -76,7 +79,7 @@ def upload_file():
     mapping_name = request.form.get('mapping')
     partition_date_str = request.form.get('partition_date', datetime.now().strftime('%Y-%m-%d'))
     
-    if file.filename == '':
+    if not file.filename or file.filename == '':
         flash('No file selected', 'error')
         return redirect(url_for('index'))
     
@@ -151,19 +154,30 @@ def upload_file():
         flash(f'✅ Successfully loaded {loaded_rows} rows to {target_table}', 'success')
         flash(f'📊 Statistics: {stats["total_rows"]} rows processed', 'info')
         
+        response = redirect(url_for('index'))
+        response.headers['X-Load-ID'] = str(load_id)
+        return response
+        
     except Exception as e:
         quarantine_path = None
         if upload_path.exists():
             quarantine_path = QUARANTINE_FOLDER / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
             shutil.move(upload_path, quarantine_path)
         
+        update_progress(load_id, f'Failed: {str(e)[:50]}', 100)
         notifier.notify_failure(filename, str(e), str(quarantine_path) if quarantine_path else None)
         flash(f'❌ Error processing file: {str(e)}', 'error')
         
         import traceback
         print(f"Error details:\n{traceback.format_exc()}")
+        
+        response = redirect(url_for('index'))
+        response.headers['X-Load-ID'] = str(load_id)
+        return response
     
-    return redirect(url_for('index'))
+    response = redirect(url_for('index'))
+    response.headers['X-Load-ID'] = str(load_id)
+    return response
 
 
 @app.route('/history')

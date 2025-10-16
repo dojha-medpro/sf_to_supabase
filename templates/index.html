@@ -38,8 +38,15 @@
             </button>
             
             <div id="processingIndicator" class="processing-indicator" style="display: none;">
-                <div class="spinner"></div>
-                <p>Processing your file... This may take a few moments for large files.</p>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-info">
+                        <span id="progressPercent">0%</span>
+                        <span id="progressStage">Starting...</span>
+                    </div>
+                </div>
             </div>
         </form>
     </div>
@@ -66,9 +73,44 @@
 <script>
 document.getElementById('partition_date').valueAsDate = new Date();
 
-document.querySelector('form').addEventListener('submit', function(e) {
+let progressInterval = null;
+
+function checkProgress(loadId) {
+    fetch(`/api/progress/${loadId}`)
+        .then(response => response.json())
+        .then(data => {
+            const progressFill = document.getElementById('progressFill');
+            const progressPercent = document.getElementById('progressPercent');
+            const progressStage = document.getElementById('progressStage');
+            
+            if (data.progress !== undefined) {
+                progressFill.style.width = data.progress + '%';
+                progressPercent.textContent = data.progress + '%';
+            }
+            
+            if (data.stage) {
+                progressStage.textContent = data.stage;
+            }
+            
+            if (data.status === 'success' || data.status === 'failed') {
+                clearInterval(progressInterval);
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }
+        })
+        .catch(error => {
+            console.error('Error checking progress:', error);
+        });
+}
+
+document.querySelector('form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
     const submitBtn = document.getElementById('submitBtn');
     const processingIndicator = document.getElementById('processingIndicator');
+    const formData = new FormData(this);
     
     const fileInput = document.getElementById('csv_file');
     const mappingSelect = document.getElementById('mapping');
@@ -80,6 +122,24 @@ document.querySelector('form').addEventListener('submit', function(e) {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '⏳ Processing...';
     processingIndicator.style.display = 'block';
+    
+    try {
+        const response = await fetch('/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const loadId = response.headers.get('X-Load-ID');
+        
+        if (loadId) {
+            progressInterval = setInterval(() => checkProgress(loadId), 500);
+        } else {
+            window.location.reload();
+        }
+    } catch (error) {
+        console.error('Upload error:', error);
+        window.location.reload();
+    }
 });
 </script>
 {% endblock %}
