@@ -10,8 +10,8 @@ partition:
 columns:
   "Full Name": full_name
   "Contact/Candidate ID": contact_sfid
-  "Job Applicant ID": job_applicant_id
-  "Job Applicant ID__2": job_applicant_sfid
+  "Job Applicant ID": job_applicant_sfid
+  "Job Applicant ID__2": job_applicant_alt_id
   "Candidate Email": email
   "Account Name": account_name
   "Applicant Source": applicant_source
