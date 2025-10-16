@@ -1,7 +1,7 @@
 # Salesforce to Supabase ETL Pipeline
 
 ## Overview
-Production-ready Python Flask application for bulk loading Salesforce report CSVs into Supabase staging tables. Features automated transformation, QA validation, high-performance PostgreSQL COPY loading, and comprehensive error handling with quarantine system.
+Production-ready Python Flask ETL application for loading Salesforce CSV exports into Supabase staging tables. Supports both manual uploads and **automated daily processing via CloudMailin email webhooks**. Features real-time progress tracking, YAML-based transformations, QA validation, high-performance PostgreSQL COPY loading, and comprehensive error handling with quarantine system.
 
 ## Project Type
 ETL Data Pipeline Application (Python Flask + PostgreSQL)
@@ -70,13 +70,25 @@ ETL Data Pipeline Application (Python Flask + PostgreSQL)
 - Go to History page to see all past loads
 - View status (success/failed/running), row counts, errors, duration
 
+### 5. CloudMailin Webhook Integration (NEW - 2025-10-16)
+- **Automated email processing**: Receives Salesforce CSV exports via CloudMailin
+- **Webhook endpoint**: `/webhook/cloudmailin` with token-based authentication
+- **Auto-detection**: Automatically detects mapping based on CSV filename patterns
+- **Dual attachment support**: Handles both base64-encoded and cloud storage URLs
+- **Production security**:
+  - Token authentication (CLOUDMAILIN_WEBHOOK_TOKEN env var) - fails closed
+  - Strict HTTPS-only URL validation with domain allowlist
+  - SSRF protection: validates hostnames against S3, GCS, Azure, CloudMailin
+  - 100 MB size limit and 30-second timeout on downloads
+- **See**: `CLOUDMAILIN_SETUP.md` for complete setup guide
+
 ## Deployment
 - **Development**: Flask dev server on port 5000
 - **Production**: Gunicorn with autoscale deployment configured
 - **Database**: Supabase PostgreSQL via DATABASE_URL environment variable
+- **Webhook**: CloudMailin integration for automated daily processing
 
 ## Future Enhancements (Planned)
-- Daily Outlook automation via Microsoft Graph API
 - Email notifications (SMTP or SendGrid integration)
 - Native PostgreSQL table partitioning for better performance
 - Enhanced CDC (Change Data Capture) processing
@@ -114,6 +126,27 @@ ETL Data Pipeline Application (Python Flask + PostgreSQL)
 - 2025-10-16: **Successfully loaded production data**:
   - form_submission: 317,360 rows ✅
   - contacts (candidates): 252,919 rows ✅
+  - job_applicant: 62,448 rows ✅
+  - contacts_with_jobs: 62,444 rows ✅
+  - job_applicant_history: 646,729 rows ✅
+- 2025-10-16: **Removed natural key validation for history tables**:
+  - job_applicant_history and placement_history now allow duplicate events (correct behavior)
+  - Database PRIMARY KEY constraints removed to support legitimate duplicate historical events
+- 2025-10-16: **Fixed jobs_and_placements mapping**:
+  - Changed end_of_assignment_survey_returned from boolean to date (stores actual date, not yes/no)
+  - Removed natural key validation (jobs can have multiple placements or no placements)
+- 2025-10-16: **Completed CloudMailin webhook integration for automated daily processing**:
+  - Created `/webhook/cloudmailin` endpoint to receive email webhooks
+  - Auto-detects YAML mapping from CSV filename patterns (contact→contacts.yaml, job_applicant→job_applicants.yaml, etc.)
+  - Supports both base64 attachments and cloud storage URLs (S3, GCS, Azure)
+  - **Production-grade security**:
+    - Token authentication with X-CloudMailin-Token header (fails closed if not configured)
+    - Strict HTTPS-only URL validation with hostname parsing
+    - Domain allowlist prevents SSRF attacks (only trusted cloud storage domains)
+    - 100 MB size limit and 30-second timeout
+  - Reuses existing ETL pipeline (validator, transformer, loader)
+  - Complete setup guide in CLOUDMAILIN_SETUP.md
+  - Test script provided: test_cloudmailin_webhook.py
 
 ## User Preferences
 - Flask framework preferred over Streamlit
