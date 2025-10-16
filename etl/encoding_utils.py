@@ -2,7 +2,7 @@
 import chardet
 
 
-def detect_encoding(file_path: str) -> str:
+def detect_encoding(file_path: str) -> tuple[str, str]:
     """
     Detect the encoding of a file with fallback handling.
     
@@ -10,12 +10,12 @@ def detect_encoding(file_path: str) -> str:
         file_path: Path to the file
         
     Returns:
-        Detected encoding name (e.g., 'utf-8', 'windows-1252', 'latin-1')
+        Tuple of (encoding, errors_mode) where errors_mode is 'strict', 'replace', or 'ignore'
     """
     encodings_to_try = ['utf-8', 'windows-1252', 'iso-8859-1', 'latin-1', 'cp1252']
     
     with open(file_path, 'rb') as f:
-        raw_data = f.read(100000)
+        raw_data = f.read()
     
     result = chardet.detect(raw_data)
     detected = result.get('encoding', '')
@@ -25,26 +25,26 @@ def detect_encoding(file_path: str) -> str:
         detected_lower = detected.lower()
         
         if detected_lower in ['ascii']:
-            return 'utf-8'
+            return 'utf-8', 'strict'
         
         if detected_lower in ['windows-1252', 'cp1252']:
-            return 'windows-1252'
+            return 'windows-1252', 'strict'
         
         if detected_lower in ['iso-8859-1', 'latin-1', 'latin1']:
-            return 'iso-8859-1'
+            return 'iso-8859-1', 'strict'
         
         if detected_lower in ['utf-8', 'utf8']:
             try:
                 raw_data.decode('utf-8')
-                return 'utf-8'
+                return 'utf-8', 'strict'
             except UnicodeDecodeError:
-                pass
+                return 'utf-8', 'replace'
     
     for encoding in encodings_to_try:
         try:
             raw_data.decode(encoding)
-            return encoding
+            return encoding, 'strict'
         except (UnicodeDecodeError, LookupError):
             continue
     
-    return 'utf-8'
+    return 'utf-8', 'replace'

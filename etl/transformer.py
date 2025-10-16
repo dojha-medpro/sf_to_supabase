@@ -29,9 +29,9 @@ class CSVTransformer:
         errors = []
         row_count = 0
         
-        encoding = detect_encoding(input_file)
+        encoding, errors_mode = detect_encoding(input_file)
         
-        with open(input_file, 'r', encoding=encoding) as infile:
+        with open(input_file, 'r', encoding=encoding, errors=errors_mode) as infile:
             reader = csv.DictReader(infile)
             
             if not reader.fieldnames:
