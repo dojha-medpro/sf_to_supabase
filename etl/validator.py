@@ -3,6 +3,7 @@ import csv
 from typing import Dict, List, Any, Tuple
 from collections import Counter
 from .encoding_utils import detect_encoding
+from .csv_utils import normalize_duplicate_headers
 
 
 class QAValidator:
@@ -49,7 +50,14 @@ class QAValidator:
                 errors.append("CSV file has no headers")
                 return False, errors, stats
             
-            source_headers = set(reader.fieldnames)
+            # Normalize duplicate headers (add __2, __3 suffixes automatically)
+            original_headers = list(reader.fieldnames)
+            normalized_headers = normalize_duplicate_headers(original_headers)
+            
+            # Update reader with normalized headers
+            reader.fieldnames = normalized_headers
+            
+            source_headers = set(normalized_headers)
             expected_headers = set(self.column_mapping.keys())
             
             missing_headers = expected_headers - source_headers

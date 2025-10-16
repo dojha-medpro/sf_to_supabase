@@ -6,6 +6,7 @@ from dateutil import parser as date_parser
 from io import StringIO
 from typing import Dict, List, Any, Optional
 from .encoding_utils import detect_encoding
+from .csv_utils import normalize_duplicate_headers
 
 
 class CSVTransformer:
@@ -37,7 +38,12 @@ class CSVTransformer:
             if not reader.fieldnames:
                 raise ValueError("CSV file has no headers")
             
-            mapped_headers = self._map_headers(reader.fieldnames)
+            # Normalize duplicate headers (add __2, __3 suffixes automatically)
+            original_headers = list(reader.fieldnames)
+            normalized_headers = normalize_duplicate_headers(original_headers)
+            reader.fieldnames = normalized_headers
+            
+            mapped_headers = self._map_headers(normalized_headers)
             mapped_headers.extend(['_partition_date', '_file_name', '_source_report', '_extract_ts', '_mapping_version', '_raw_hash'])
             
             with open(output_file, 'w', encoding='utf-8', newline='') as outfile:
