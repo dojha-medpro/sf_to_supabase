@@ -1,6 +1,6 @@
 source_report: "Placement History (events)"
 target_object: "placement_history"
-natural_key: ["placement_sfid", "edited_at", "field_event"]
+natural_key: []  # No uniqueness check for history tables - allow all events
 
 partition:
   from_field: "edited_at"     # event timestamp → _partition_date = edited_at::date
