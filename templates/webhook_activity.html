@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Webhook Activity - ETL Pipeline{% endblock %}
+
+{% block content %}
+<div class="history-section">
+    <h1>📧 Webhook Activity</h1>
+    <p class="subtitle">CloudMailin email webhooks and automated processing</p>
+    
+    <div class="table-container">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Received</th>
+                    <th>From Email</th>
+                    <th>Subject</th>
+                    <th>Attachments</th>
+                    <th>Files Processed</th>
+                    <th>Files Skipped</th>
+                    <th>Files Failed</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if webhooks %}
+                    {% for wh in webhooks %}
+                    <tr class="status-{{ wh[8] }}">
+                        <td>{{ wh[1].strftime('%Y-%m-%d %H:%M') if wh[1] else '-' }}</td>
+                        <td>{{ wh[2] or '-' }}</td>
+                        <td>{{ wh[3] or '-' }}</td>
+                        <td class="center">{{ wh[4] or 0 }}</td>
+                        <td>
+                            {% if wh[5] %}
+                                <ul class="file-list">
+                                    {% for file in wh[5] %}
+                                        <li>✅ {{ file }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if wh[6] %}
+                                <ul class="file-list">
+                                    {% for file in wh[6] %}
+                                        <li>⏭️ {{ file }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if wh[7] %}
+                                <ul class="file-list">
+                                    {% for file in wh[7] %}
+                                        <li>❌ {{ file }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ wh[8] }}">
+                                {{ wh[8] }}
+                            </span>
+                            {% if wh[9] %}
+                                <details>
+                                    <summary>Error</summary>
+                                    <pre>{{ wh[9] }}</pre>
+                                </details>
+                            {% endif %}
+                            {% if wh[10] and wh[10]|length > 0 %}
+                                <details>
+                                    <summary>Load IDs</summary>
+                                    <div class="load-ids">
+                                        {% for load_id in wh[10] %}
+                                            <a href="/history" class="load-link">Load #{{ load_id }}</a>
+                                        {% endfor %}
+                                    </div>
+                                </details>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="no-data">
+                            <p>No webhook activity yet</p>
+                            <p style="margin-top: 10px; font-size: 0.9em;">
+                                Configure CloudMailin to send emails to your webhook endpoint
+                            </p>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if webhooks and webhooks|length > 0 %}
+    <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+        <h3>📊 Summary</h3>
+        <p>Total webhook requests: <strong>{{ webhooks|length }}</strong></p>
+        <p>Last received: <strong>{{ webhooks[0][1].strftime('%Y-%m-%d %H:%M:%S') if webhooks[0][1] else 'Never' }}</strong></p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.file-list {
+    list-style: none;
+    padding: 0;
+    margin: 5px 0;
+    font-size: 0.9em;
+}
+
+.file-list li {
+    padding: 2px 0;
+}
+
+.center {
+    text-align: center;
+}
+
+.load-ids {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 5px;
+}
+
+.load-link {
+    background: rgba(99, 102, 241, 0.2);
+    color: #818cf8;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.85em;
+}
+
+.load-link:hover {
+    background: rgba(99, 102, 241, 0.3);
+}
+
+.badge-success {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+}
+
+.badge-partial {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+}
+
+.badge-no_files {
+    background: rgba(148, 163, 184, 0.2);
+    color: #94a3b8;
+}
+
+.badge-failed {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+</style>
+{% endblock %}

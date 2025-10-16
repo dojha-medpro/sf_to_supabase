@@ -230,6 +230,36 @@ def history():
         return redirect(url_for('index'))
 
 
+@app.route('/webhook-activity')
+def webhook_activity():
+    """Show webhook activity log."""
+    import psycopg2
+    
+    try:
+        conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, received_at, from_email, subject, attachments_count,
+                   files_processed, files_skipped, files_failed, status, 
+                   error_message, load_ids
+            FROM webhook_log
+            ORDER BY received_at DESC
+            LIMIT 100
+        """)
+        
+        webhooks = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('webhook_activity.html', webhooks=webhooks)
+        
+    except Exception as e:
+        flash(f'Error loading webhook activity: {str(e)}', 'error')
+        return redirect(url_for('index'))
+
+
 @app.route('/api/mappings')
 def api_mappings():
     """API endpoint to get available mappings."""
@@ -543,6 +573,33 @@ def cloudmailin_webhook():
                     'error': str(e)
                 })
         
+        # Log webhook request to database
+        files_processed = [r['file'] for r in results if r['status'] == 'success']
+        files_skipped = [r['file'] for r in results if r['status'] == 'skipped']
+        files_failed = [r['file'] for r in results if r['status'] == 'failed']
+        load_ids = [r.get('load_id') for r in results if r.get('load_id')]
+        
+        import psycopg2
+        conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO webhook_log 
+            (from_email, subject, attachments_count, files_processed, files_skipped, files_failed, status, load_ids)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            from_email, 
+            subject, 
+            len(attachments),
+            files_processed,
+            files_skipped,
+            files_failed,
+            'success' if files_processed else 'partial' if files_skipped or files_failed else 'no_files',
+            load_ids
+        ))
+        conn.commit()
+        cur.close()
+        conn.close()
+        
         return jsonify({
             'status': 'ok',
             'email_from': from_email,
@@ -554,6 +611,23 @@ def cloudmailin_webhook():
         app.logger.error(f"Webhook error: {str(e)}")
         import traceback
         traceback.print_exc()
+        
+        # Log failed webhook request
+        try:
+            import psycopg2
+            conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO webhook_log 
+                (from_email, subject, attachments_count, status, error_message)
+                VALUES (%s, %s, %s, %s, %s)
+            """, ('unknown', 'Error', 0, 'failed', str(e)))
+            conn.commit()
+            cur.close()
+            conn.close()
+        except:
+            pass  # Don't fail on logging errors
+        
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
