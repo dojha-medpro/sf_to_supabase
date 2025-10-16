@@ -46,9 +46,17 @@ class BulkLoader:
         try:
             self._update_progress(cursor, load_id, 'Loading to database', 60)
             
+            # Get column names from CSV header
             with open(csv_file, 'r', encoding='utf-8') as f:
-                copy_query = sql.SQL("COPY {} FROM STDIN WITH CSV HEADER DELIMITER ','").format(
-                    sql.Identifier(*table_name.split('.'))
+                first_line = f.readline().strip()
+                csv_columns = first_line.split(',')
+            
+            # Build COPY command with explicit column list
+            with open(csv_file, 'r', encoding='utf-8') as f:
+                columns_sql = sql.SQL(', ').join([sql.Identifier(col) for col in csv_columns])
+                copy_query = sql.SQL("COPY {} ({}) FROM STDIN WITH CSV HEADER DELIMITER ','").format(
+                    sql.Identifier(*table_name.split('.')),
+                    columns_sql
                 )
                 cursor.copy_expert(copy_query.as_string(cursor), f)
             
