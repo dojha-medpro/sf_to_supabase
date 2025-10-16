@@ -156,6 +156,16 @@ ETL Data Pipeline Application (Python Flask + PostgreSQL)
   - Displays email details, attachments, files processed/skipped/failed, and status
   - Links to load_history records for detailed ETL job tracking
   - Created webhook_log table to persist webhook request history
+- 2025-10-16: **Implemented robust database connections for automated loads**:
+  - Created `etl/db_connection.py` with retry logic and keep-alive for Supabase
+  - Automatic retry on connection failures (up to 5 attempts with exponential backoff)
+  - TCP keep-alive settings prevent stale connections during idle periods
+  - SSL mode handling for Supabase pooler connections
+  - All database connections updated to use robust connect_with_retry()
+  - Ensures 6 AM automated loads work reliably even after overnight idle
+- 2025-10-16: **Fixed CloudMailin auto-detection for report names with spaces**:
+  - Now matches "Placement History Daily Report", "Job Applicant History", etc.
+  - Added support for both underscore and space-separated filenames
 - 2025-10-16: **Implemented UPSERT mode for incremental daily loads**:
   - Smart load strategy based on natural keys defined in YAML mappings
   - **UPSERT mode** (tables with natural keys): Deletes old records by natural key, inserts updated records

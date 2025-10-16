@@ -15,6 +15,7 @@ from etl.transformer import CSVTransformer
 from etl.validator import QAValidator
 from etl.loader import BulkLoader
 from etl.notifications import NotificationService
+from etl.db_connection import connect_with_retry
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -38,9 +39,8 @@ def index():
 
 
 def update_progress(load_id: int, stage: str, progress: int):
-    """Update progress for a load."""
-    import psycopg2
-    conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+    """Update progress for a load with robust connection."""
+    conn = connect_with_retry()
     cursor = conn.cursor()
     cursor.execute("""
         UPDATE load_history 
@@ -52,9 +52,8 @@ def update_progress(load_id: int, stage: str, progress: int):
     conn.close()
 
 def update_progress_and_status(load_id: int, stage: str, progress: int, status: str):
-    """Update progress and status for a load."""
-    import psycopg2
-    conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+    """Update progress and status for a load with robust connection."""
+    conn = connect_with_retry()
     cursor = conn.cursor()
     cursor.execute("""
         UPDATE load_history 
@@ -66,9 +65,8 @@ def update_progress_and_status(load_id: int, stage: str, progress: int, status: 
     conn.close()
 
 def create_load_record(filename: str, mapping_name: str, partition_date_str: str, target_table: str) -> int:
-    """Create initial load record and return load_id."""
-    import psycopg2
-    conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+    """Create initial load record and return load_id with robust connection."""
+    conn = connect_with_retry()
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO load_history 
@@ -208,10 +206,8 @@ def upload_file():
 @app.route('/history')
 def history():
     """Show load history."""
-    import psycopg2
-    
     try:
-        conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+        conn = connect_with_retry()
         cursor = conn.cursor()
         
         cursor.execute("""
@@ -237,10 +233,8 @@ def history():
 @app.route('/webhook-activity')
 def webhook_activity():
     """Show webhook activity log."""
-    import psycopg2
-    
     try:
-        conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+        conn = connect_with_retry()
         cursor = conn.cursor()
         
         cursor.execute("""
@@ -274,9 +268,8 @@ def api_mappings():
 @app.route('/api/progress/<int:load_id>')
 def api_progress(load_id):
     """API endpoint to get progress for a specific load."""
-    import psycopg2
     try:
-        conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+        conn = connect_with_retry()
         cursor = conn.cursor()
         
         cursor.execute("""
@@ -590,12 +583,8 @@ def cloudmailin_webhook():
         files_failed = [r['file'] for r in results if r['status'] == 'failed']
         load_ids = [r.get('load_id') for r in results if r.get('load_id')]
         
-        import psycopg2
-        # Fix SSL connection issue with Supabase pooler by adding sslmode
-        db_url = os.environ.get('DATABASE_URL', '')
-        if db_url and 'sslmode' not in db_url:
-            db_url += '?sslmode=require' if '?' not in db_url else '&sslmode=require'
-        conn = psycopg2.connect(db_url)
+        # Log webhook request with robust connection
+        conn = connect_with_retry()
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO webhook_log 
@@ -627,14 +616,9 @@ def cloudmailin_webhook():
         import traceback
         traceback.print_exc()
         
-        # Log failed webhook request
+        # Log failed webhook request with robust connection
         try:
-            import psycopg2
-            # Fix SSL connection issue with Supabase pooler by adding sslmode
-            db_url = os.environ.get('DATABASE_URL', '')
-            if db_url and 'sslmode' not in db_url:
-                db_url += '?sslmode=require' if '?' not in db_url else '&sslmode=require'
-            conn = psycopg2.connect(db_url)
+            conn = connect_with_retry()
             cur = conn.cursor()
             cur.execute("""
                 INSERT INTO webhook_log 

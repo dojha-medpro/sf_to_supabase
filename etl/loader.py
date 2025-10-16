@@ -5,6 +5,7 @@ from psycopg2 import sql
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from typing import Optional
 from datetime import datetime
+from etl.db_connection import connect_with_retry
 
 
 class BulkLoader:
@@ -37,8 +38,8 @@ class BulkLoader:
         if table_name not in allowed_tables:
             raise ValueError(f"Invalid table name: {table_name}")
         
-        conn = psycopg2.connect(self.database_url)
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        # Use robust connection with retry logic and keep-alive for automated loads
+        conn = connect_with_retry(autocommit=True)
         cursor = conn.cursor()
         
         if load_id is None:
