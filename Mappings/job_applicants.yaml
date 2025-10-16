@@ -1,0 +1,43 @@
+source_report: "Job Applicants"
+target_object: "job_applicant"
+natural_key: ["job_applicant_sfid"]
+
+partition:
+  from_field: "created_at"     # Created Date/Time → timestamptz → _partition_date = created_at::date
+
+columns:
+  "Created Date/Time": created_at
+  "Job Applicant: Job Applicant ID": job_applicant_sfid
+  "Job Applicant: ID": job_applicant_alt_id
+  "Candidate": candidate
+  "Account": account
+  "Applicant Source": applicant_source
+  "Job Title": job_title
+  "Application Status": application_status
+  "Application Status Pick": application_status_pick
+  "Date Offer Received": date_offer_received
+  "Interview Availability": interview_availability
+  "Date/Time Submitted to Hiring Manager": submitted_to_hm_at
+  "Date Submitted to Hiring Manager Ends": submitted_to_hm_end_date
+  "Stage": stage_name
+  "Job Applicant: Last Modified Date": last_modified_at
+
+coercions:
+  created_at: "timestamptz"
+  submitted_to_hm_at: "timestamptz"
+  submitted_to_hm_end_date: "date"
+  date_offer_received: "date"
+  last_modified_at: "timestamptz"
+  applicant_source: "trim"
+  job_title: "trim"
+  application_status: "trim"
+  application_status_pick: "trim"
+  stage_name: "trim"
+  candidate: "trim"
+  account: "trim"
+
+null_like: ["", "NULL", "N/A", "n/a", "null"]
+
+reject_rules:
+  - "job_applicant_sfid is null"
+  - "created_at is null"

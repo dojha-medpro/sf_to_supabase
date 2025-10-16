@@ -1,0 +1,53 @@
+source_report: "Lead Intake"
+target_object: "form_submission"
+natural_key: ["form_submission_name"]
+
+partition:
+  from_field: "created_at"     # Created Date/Time → timestamptz → _partition_date = created_at::date
+
+columns:
+  "Form Submission: Form Submission Name": form_submission_name
+  "Created Date/Time": created_at
+  "Contact/Candidate": contact_candidate
+  "Application": application
+  "Job": job
+  "Form Submission: Record Type": record_type
+  "Your First": first_name
+  "Your Last": last_name
+  "Your Email": email
+  "Form Type": form_type
+  "Your Phone": phone
+  "City": city
+  "Zip Code": zip_code
+  "Job City": job_city
+  "Job State": job_state
+  "Form": form
+  "utm_source": utm_source
+  "utm_medium": utm_medium
+  "utm_campaign": utm_campaign
+  "Source": source
+  "Marketing Campaign": marketing_campaign
+  "Area of Assignment": area_of_assignment
+  "Form Submission: Last Modified Date": last_modified_at
+
+coercions:
+  created_at: "timestamptz"
+  last_modified_at: "timestamptz"
+  email: "lower|trim"
+  first_name: "trim"
+  last_name: "trim"
+  city: "trim"
+  job_city: "trim"
+  job_state: "trim"
+  marketing_campaign: "trim"
+  source: "trim"
+  form_type: "trim"
+  area_of_assignment: "trim"
+  phone: "trim"          # keep as text in staging
+  zip_code: "trim"       # keep as text to preserve leading zeros
+
+null_like: ["", "NULL", "N/A", "n/a", "null"]
+
+reject_rules:
+  - "form_submission_name is null"
+  - "created_at is null"

@@ -1,0 +1,38 @@
+source_report: "Placement History (events)"
+target_object: "placement_history"
+natural_key: ["placement_sfid", "edited_at", "field_event"]
+
+partition:
+  from_field: "edited_at"     # event timestamp → _partition_date = edited_at::date
+
+columns:
+  "Placement: ID": placement_alt_id
+  "Placement: Placement ID": placement_sfid
+  "Placement: Owner Name": owner_name
+  "Placement: Created Date": placement_created_at
+  "Candidate": candidate
+  "Job Applicant": job_applicant
+  "Field / Event": field_event
+  "Old Value": old_value
+  "New Value": new_value
+  "Edit Date": edited_at
+  "Placement: Last Modified Date": last_modified_at
+  "Job Applicant Stage": job_applicant_stage
+
+coercions:
+  placement_created_at: "date"     # switch to timestamptz if source contains time
+  edited_at: "timestamptz"
+  last_modified_at: "timestamptz"
+  owner_name: "trim"
+  candidate: "trim"
+  job_applicant: "trim"
+  field_event: "trim"
+  job_applicant_stage: "trim"
+  # Keep old_value/new_value as text (free-form)
+
+null_like: ["", "NULL", "N/A", "n/a", "null"]
+
+reject_rules:
+  - "placement_sfid is null"
+  - "edited_at is null"
+  - "field_event is null"

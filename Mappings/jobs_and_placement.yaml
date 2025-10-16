@@ -1,0 +1,59 @@
+source_report: "Jobs and Placements"
+target_object: "jobs_and_placements"
+natural_key: ["job_sfid"]
+
+partition:
+  from_load_date: true        # snapshot partition; use last_modified_at for CDC
+
+columns:
+  "Job ID": job_sfid
+  "Placement ID": placement_sfid
+  "Start Date": start_date
+  "End Date": end_date
+  "Original Start Date": original_start_date
+  "Original End Date": original_end_date
+  "Original Placement Start Date": original_placement_start_date
+  "MedPro Department": medpro_department
+  "Orientation Start Date": orientation_start_date
+  "Duration of Assignment": duration_of_assignment
+  "Shift": shift
+  "End of Assignment Survey Returned": end_of_assignment_survey_returned
+  "Bill Rate - Base": bill_rate_base
+  "Bill Rate": bill_rate
+  "Bill Rate - Overtime": bill_rate_overtime
+  "Pay Rate": pay_rate
+  "Pay Rate - Base": pay_rate_base
+  "Pay Rate - Overtime": pay_rate_overtime
+  "Bill Rate - Holiday": bill_rate_holiday
+  "Pay Rate - Holiday": pay_rate_holiday
+  "Last Modified Date": last_modified_at
+  "Placement Type": placement_type
+  "International Placement Active": international_placement_active
+
+coercions:
+  start_date: "date"
+  end_date: "date"
+  original_start_date: "date"
+  original_end_date: "date"
+  original_placement_start_date: "date"
+  orientation_start_date: "date"
+  last_modified_at: "timestamptz"
+  end_of_assignment_survey_returned: "boolean"
+  international_placement_active: "boolean"
+  duration_of_assignment: "integer"   # set to "text" if source not numeric
+  bill_rate_base: "numeric"
+  bill_rate: "numeric"
+  bill_rate_overtime: "numeric"
+  pay_rate: "numeric"
+  pay_rate_base: "numeric"
+  pay_rate_overtime: "numeric"
+  bill_rate_holiday: "numeric"
+  pay_rate_holiday: "numeric"
+  shift: "trim"
+  placement_type: "trim"
+  medpro_department: "trim"
+
+null_like: ["", "NULL", "N/A", "n/a", "null", "$0", "$0.00"]
+
+reject_rules:
+  - "job_sfid is null"

@@ -1,0 +1,47 @@
+source_report: "Contacts With Jobs (job-applicant centric)"
+target_object: "contacts_with_jobs"
+natural_key: ["job_applicant_sfid"]
+
+partition:
+  from_load_date: true        # snapshot partition; use last_modified_at for CDC
+
+# If your CSV has two identical headers ("Job Applicant ID"), give the second a suffix in the loader
+# (e.g., "Job Applicant ID__2"). Map both below.
+columns:
+  "Full Name": full_name
+  "Contact/Candidate ID": contact_sfid
+  "Job Applicant ID": job_applicant_sfid
+  "Job Applicant ID__2": job_applicant_alt_id
+  "Candidate Email": email
+  "Account Name": account_name
+  "Applicant Source": applicant_source
+  "Job Title": job_title
+  "Job Status": job_status
+  "Date/Time Submitted to Hiring Manager": submitted_to_hm_at
+  "Days with Hiring Manager": days_with_hiring_manager
+  "Time: AM to Hiring Manager": time_am_to_hiring_manager
+  "Time: SA to Hiring Manager": time_sa_to_hiring_manager
+  "Date Offer Received": date_offer_received
+  "Interview Availability": interview_availability
+  "Job City State": job_city_state
+  "Job Source": job_source
+  "Last Modified Date": last_modified_at
+
+coercions:
+  email: "lower|trim"
+  submitted_to_hm_at: "timestamptz"
+  date_offer_received: "date"
+  days_with_hiring_manager: "integer"     # set to "text" if the source isn't numeric
+  last_modified_at: "timestamptz"
+  full_name: "trim"
+  account_name: "trim"
+  applicant_source: "trim"
+  job_title: "trim"
+  job_status: "trim"
+  job_source: "trim"
+  job_city_state: "trim"
+
+null_like: ["", "NULL", "N/A", "n/a", "null"]
+
+reject_rules:
+  - "job_applicant_sfid is null"

@@ -1,0 +1,54 @@
+source_report: "Contacts (Contact/Candidate)"
+target_object: "contact"
+natural_key: ["contact_sfid"]
+
+partition:
+  from_load_date: true        # snapshot partitioning; use last_modified_at only for CDC classification
+
+columns:
+  "Contact/Candidate Record Type": record_type
+  "Account ID": account_id
+  "Contact/Candidate ID": contact_sfid
+  "First Name": first_name
+  "Last Name": last_name
+  "Email": email
+  "Email Opt Out": email_opt_out
+  "Applicant History": applicant_history
+  "Application Date": application_date
+  "Specialty": specialty
+  "Candidate Status": candidate_status
+  "Employment Status": employment_status
+  "Green Card Filing Status": green_card_filing_status
+  "Initial Documents Status": initial_documents_status
+  "Intl Employment Status": intl_employment_status
+  "Lead Status": lead_status
+  "Licensure Status": licensure_status
+  "MedPro Department": medpro_department
+  "Intl Pipeline Summary": intl_pipeline_summary
+  "Intl Stage - Contract Returned": intl_stage_contract_returned
+  "Intl Healthcare Vendor": intl_healthcare_vendor
+  "Intl Interviewer": intl_interviewer
+  "Contract Effective Date": contract_effective_date
+  "Date Deployed": date_deployed
+  "Last Modified Date": last_modified_at
+
+coercions:
+  email: "lower|trim"
+  email_opt_out: "boolean"
+  application_date: "date"
+  contract_effective_date: "date"
+  date_deployed: "date"
+  last_modified_at: "timestamptz"
+  first_name: "trim"
+  last_name: "trim"
+  specialty: "trim"
+  candidate_status: "trim"
+  employment_status: "trim"
+  medpro_department: "trim"
+  intl_healthcare_vendor: "trim"
+  intl_interviewer: "trim"
+
+null_like: ["", "NULL", "N/A", "n/a", "null"]
+
+reject_rules:
+  - "contact_sfid is null"

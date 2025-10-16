@@ -1,0 +1,28 @@
+source_report: "Job Applicant History (events)"
+target_object: "job_applicant_history"
+natural_key: ["job_applicant_sfid", "edited_at", "field_event"]
+
+partition:
+  from_field: "edited_at"     # event timestamp → _partition_date = edited_at::date
+
+columns:
+  "Job Applicant: ID": job_applicant_alt_id
+  "Job Applicant: Job Applicant ID": job_applicant_sfid
+  "Candidate": candidate
+  "Field / Event": field_event
+  "Old Value": old_value
+  "New Value": new_value
+  "Edit Date": edited_at
+
+coercions:
+  edited_at: "timestamptz"
+  field_event: "trim"
+  candidate: "trim"
+  # Keep old_value/new_value as text (free-form)
+
+null_like: ["", "NULL", "N/A", "n/a", "null"]
+
+reject_rules:
+  - "job_applicant_sfid is null"
+  - "edited_at is null"
+  - "field_event is null"
