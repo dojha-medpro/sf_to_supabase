@@ -106,6 +106,14 @@ ETL Data Pipeline Application (Python Flask + PostgreSQL)
   - Now reads only first 100KB sample (0.028 seconds vs minutes)
   - Uses 'replace' mode for UTF-8 to gracefully handle any encoding issues
   - Improved frontend error handling to show error messages properly
+- 2025-10-16: **Fixed critical encoding bug for all file types**:
+  - Changed ALL encodings (Windows-1252, ISO-8859-1, etc.) to use 'replace' mode instead of 'strict'
+  - Previously: only tested 100KB sample with 'strict' mode → crashed on bad bytes in full file
+  - Now: uses 'replace' mode universally → substitutes bad characters with � instead of crashing
+  - Handles corrupt/mixed-encoding CSVs gracefully without quarantining valid data
+- 2025-10-16: **Successfully loaded production data**:
+  - form_submission: 317,360 rows ✅
+  - contacts (candidates): 252,919 rows ✅
 
 ## User Preferences
 - Flask framework preferred over Streamlit

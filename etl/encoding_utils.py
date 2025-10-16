@@ -27,13 +27,13 @@ def detect_encoding(file_path: str) -> tuple[str, str]:
         detected_lower = detected.lower()
         
         if detected_lower in ['ascii']:
-            return 'utf-8', 'strict'
+            return 'utf-8', 'replace'
         
         if detected_lower in ['windows-1252', 'cp1252']:
             # Verify it actually works
             try:
                 raw_data.decode('windows-1252')
-                return 'windows-1252', 'strict'
+                return 'windows-1252', 'replace'
             except:
                 pass
         
@@ -41,7 +41,7 @@ def detect_encoding(file_path: str) -> tuple[str, str]:
             # Verify it actually works
             try:
                 raw_data.decode('iso-8859-1')
-                return 'iso-8859-1', 'strict'
+                return 'iso-8859-1', 'replace'
             except:
                 pass
         
@@ -59,8 +59,8 @@ def detect_encoding(file_path: str) -> tuple[str, str]:
     for encoding in encodings_to_try:
         try:
             raw_data.decode(encoding)
-            # Use 'replace' mode for safety (sample might pass but full file could fail)
-            return encoding, 'replace' if encoding == 'utf-8' else 'strict'
+            # Always use 'replace' mode for safety (sample might pass but full file could fail)
+            return encoding, 'replace'
         except (UnicodeDecodeError, LookupError):
             continue
     
