@@ -3,32 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}ETL Pipeline Documentation{% endblock %}</title>
+    <title>{% block title %}Salesforce to Supabase ETL{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <nav class="navbar">
         <div class="container">
-            <a href="/" class="logo">ETL Pipeline Docs</a>
+            <a href="/" class="logo">📊 ETL Pipeline</a>
             <ul class="nav-links">
-                <li><a href="/">Home</a></li>
-                <li><a href="/schemas">Schemas</a></li>
-                <li><a href="/mappings">Mappings</a></li>
-                <li><a href="/docs/load-scripts">Load Scripts</a></li>
-                <li><a href="/docs/qa-scripts">QA Scripts</a></li>
-                <li><a href="/docs/reports">Reports</a></li>
-                <li><a href="/release-notes">Release Notes</a></li>
+                <li><a href="/">Upload</a></li>
+                <li><a href="/history">History</a></li>
             </ul>
         </div>
     </nav>
     
     <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            <pre>{{ message }}</pre>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
         {% block content %}{% endblock %}
     </main>
     
     <footer>
         <div class="container">
-            <p>Salesforce to Supabase ETL Pipeline Documentation</p>
+            <p>Salesforce to Supabase ETL Pipeline &copy; 2025</p>
         </div>
     </footer>
 </body>

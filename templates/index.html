@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Upload CSV - ETL Pipeline{% endblock %}
+
+{% block content %}
+<div class="upload-section">
+    <h1>Bulk Load CSV Files</h1>
+    <p class="subtitle">Upload Salesforce report CSVs and load them into Supabase staging tables</p>
+    
+    <div class="upload-card">
+        <form method="POST" action="/upload" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="csv_file">Select CSV File</label>
+                <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
+                <small>Maximum file size: 100 MB</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="mapping">Select Mapping</label>
+                <select id="mapping" name="mapping" required>
+                    <option value="">-- Choose a mapping --</option>
+                    {% for mapping in mappings %}
+                        <option value="{{ mapping }}">{{ mapping }}</option>
+                    {% endfor %}
+                </select>
+                <small>YAML mapping file that defines the transformation rules</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="partition_date">Partition Date</label>
+                <input type="date" id="partition_date" name="partition_date" 
+                       value="{{ today }}" required>
+                <small>The load snapshot date (defaults to today)</small>
+            </div>
+            
+            <button type="submit" class="btn-primary">
+                🚀 Upload & Process
+            </button>
+        </form>
+    </div>
+    
+    <div class="info-section">
+        <h2>How It Works</h2>
+        <ol class="steps">
+            <li><strong>Upload CSV:</strong> Select your Salesforce report export</li>
+            <li><strong>Choose Mapping:</strong> Pick the YAML mapping that matches your report</li>
+            <li><strong>QA Validation:</strong> Automatic quality checks run before loading</li>
+            <li><strong>Transform:</strong> Headers renamed, data coerced per mapping rules</li>
+            <li><strong>Load:</strong> High-speed COPY into Supabase staging tables</li>
+        </ol>
+        
+        <h3>Available Mappings</h3>
+        <ul class="mapping-list">
+            {% for mapping in mappings %}
+                <li><code>{{ mapping }}.yaml</code></li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<script>
+document.getElementById('partition_date').valueAsDate = new Date();
+</script>
+{% endblock %}

@@ -1,30 +1,90 @@
-# Salesforce to Supabase ETL Pipeline Documentation
+# Salesforce to Supabase ETL Pipeline
 
 ## Overview
-This repository contains documentation for a Salesforce to Supabase ETL (Extract, Transform, Load) data pipeline. It serves as the single source of truth for database schemas, data mappings, load procedures, and quality assurance processes.
+Production-ready Python Flask application for bulk loading Salesforce report CSVs into Supabase staging tables. Features automated transformation, QA validation, high-performance PostgreSQL COPY loading, and comprehensive error handling with quarantine system.
 
 ## Project Type
-Documentation repository - contains no executable code, only specifications and documentation.
+ETL Data Pipeline Application (Python Flask + PostgreSQL)
 
 ## Structure
-- **Schemas/**: Database design documentation for staging, core, and views
-- **Mappings/**: YAML files mapping Salesforce report headers to database columns
-- **Load Scripts/**: Documentation for the ETL load process
-- **QA Scripts/**: Quality assurance test documentation
-- **Reports/**: Landing zone for CSV exports (gitignored, not tracked)
+- **etl/**: Core ETL modules (mapper, transformer, validator, loader, notifications)
+- **Schemas/**: Database design documentation for staging tables
+- **Mappings/**: YAML transformation rules mapping Salesforce → Supabase columns
+- **templates/**: Flask HTML templates for upload UI and history dashboard
+- **uploads/**: Temporary storage for uploaded CSVs (gitignored)
+- **quarantine/**: Failed files storage with error logging (gitignored)
 
-## Purpose
-- Define database schemas for Supabase (staging, core, views)
-- Document mappings from Salesforce reports to database tables
-- Provide runbooks for daily data loads
-- Establish QA gates and testing procedures
+## Features Implemented (2025-10-16)
+
+### 1. Database Schema
+- Created 4 staging tables in Supabase: `contacts`, `form_submission`, `job_applicant`, `jobs_and_placements`
+- Each table includes operational metadata: `_partition_date`, `_file_name`, `_source_report`, `_loaded_at`
+- `load_history` table tracks all ETL runs with status and error details
+
+### 2. ETL Pipeline Components
+- **YAML Mapping Parser**: Reads transformation rules from Mappings/ directory
+- **CSV Transformer**: Applies header renames, data coercions (trim, lowercase, boolean, date, numeric)
+- **QA Validator**: Header validation, duplicate detection, required field checks
+- **Bulk Loader**: PostgreSQL COPY for high-performance inserts (SQL injection protected)
+- **Notification Service**: Logs failures and successes to `etl_notifications.log`
+
+### 3. Web Interface
+- Upload page with file selector, mapping dropdown, partition date picker
+- Load history dashboard showing past runs with status and error details
+- Beautiful gradient UI with responsive design
+- Flash messages for user feedback
+
+### 4. Security & Safety
+- SQL injection prevention using `psycopg2.sql.Identifier` and table whitelist
+- File upload validation (100 MB limit, CSV only)
+- Quarantine system for failed files with timestamped storage
+- Comprehensive error logging and traceability
+
+## How to Use
+
+### Initial Bulk Load
+1. Navigate to the Upload page
+2. Select a Salesforce CSV export
+3. Choose the matching YAML mapping (e.g., `contacts.yaml` for contact reports)
+4. Set the partition date (defaults to today)
+5. Click "Upload & Process"
+
+### Pipeline Flow
+1. **Upload** → File saved to uploads/
+2. **QA Validation** → Headers checked, duplicates detected, required fields verified
+3. **Transform** → CSV headers renamed, data coerced per mapping rules
+4. **Load** → Bulk insert to Supabase staging table via PostgreSQL COPY
+5. **Success** → Files cleaned up, success notification logged
+6. **Failure** → File quarantined, error logged, user notified
+
+### View History
+- Go to History page to see all past loads
+- View status (success/failed/running), row counts, errors, duration
+
+## Deployment
+- **Development**: Flask dev server on port 5000
+- **Production**: Gunicorn with autoscale deployment configured
+- **Database**: Supabase PostgreSQL via DATABASE_URL environment variable
+
+## Future Enhancements (Planned)
+- Daily Outlook automation via Microsoft Graph API
+- Email notifications (SMTP or SendGrid integration)
+- Native PostgreSQL table partitioning for better performance
+- Enhanced CDC (Change Data Capture) processing
+- Data dictionary and ERD generation
 
 ## Recent Changes
-- Initial setup in Replit environment (2025-10-16)
-- Created documentation viewer for easy browsing
+- 2025-10-16: Built complete bulk load ETL pipeline
+- 2025-10-16: Created Supabase staging tables
+- 2025-10-16: Implemented QA validation framework
+- 2025-10-16: Added SQL injection protection
+- 2025-10-16: Configured deployment with gunicorn
 
 ## User Preferences
-None yet.
+- Flask framework preferred over Streamlit
+- Focus on bulk loading first, Outlook automation later
+- Failed files should be quarantined with notifications
 
-## Architecture
-This is a documentation-only repository. A simple web-based documentation viewer has been added to browse the markdown files and YAML configurations in a user-friendly interface.
+## Test Data
+- Sample CSV available: `test_contacts_sample.csv` (3 rows)
+- Mapping: `Mappings/contacts.yaml`

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Load History - ETL Pipeline{% endblock %}
+
+{% block content %}
+<div class="history-section">
+    <h1>Load History</h1>
+    <p class="subtitle">View recent data loads and their status</p>
+    
+    <div class="table-container">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Load Date</th>
+                    <th>Table</th>
+                    <th>File Name</th>
+                    <th>Mapping</th>
+                    <th>Rows</th>
+                    <th>Status</th>
+                    <th>Started</th>
+                    <th>Duration</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if loads %}
+                    {% for load in loads %}
+                    <tr class="status-{{ load[6] }}">
+                        <td>{{ load[0] }}</td>
+                        <td>{{ load[1] }}</td>
+                        <td><code>{{ load[2] }}</code></td>
+                        <td>{{ load[3] }}</td>
+                        <td>{{ load[4] }}</td>
+                        <td>{{ load[5] or '-' }}</td>
+                        <td>
+                            <span class="badge badge-{{ load[6] }}">
+                                {{ load[6] }}
+                            </span>
+                            {% if load[7] %}
+                                <details>
+                                    <summary>Error</summary>
+                                    <pre>{{ load[7] }}</pre>
+                                </details>
+                            {% endif %}
+                        </td>
+                        <td>{{ load[8].strftime('%Y-%m-%d %H:%M') if load[8] else '-' }}</td>
+                        <td>
+                            {% if load[9] and load[8] %}
+                                {{ ((load[9] - load[8]).total_seconds() / 60) | round(2) }} min
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="9" class="no-data">No load history available</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
