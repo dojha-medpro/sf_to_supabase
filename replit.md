@@ -33,6 +33,7 @@ ETL Data Pipeline Application (Python Flask + PostgreSQL)
 - **CSV Transformer**: Applies header renames, data coercions (trim, lowercase, boolean, date, numeric)
 - **QA Validator**: Header validation, duplicate detection, required field checks
 - **Bulk Loader**: PostgreSQL COPY for high-performance inserts (SQL injection protected)
+- **REPLACE Mode**: Automatically deletes existing data for partition_date before loading (prevents duplicates on daily refreshes)
 - **Notification Service**: Logs failures and successes to `etl_notifications.log`
 
 ### 3. Web Interface
@@ -140,13 +141,26 @@ ETL Data Pipeline Application (Python Flask + PostgreSQL)
   - Auto-detects YAML mapping from CSV filename patterns (contact→contacts.yaml, job_applicant→job_applicants.yaml, etc.)
   - Supports both base64 attachments and cloud storage URLs (S3, GCS, Azure)
   - **Production-grade security**:
-    - Token authentication with X-CloudMailin-Token header (fails closed if not configured)
+    - HTTP Basic Authentication (CloudMailin recommended approach)
+    - Switched from custom header to Basic Auth for better compatibility
     - Strict HTTPS-only URL validation with hostname parsing
     - Domain allowlist prevents SSRF attacks (only trusted cloud storage domains)
     - 100 MB size limit and 30-second timeout
+  - Fixed SSL connection issue with Supabase pooler by adding sslmode=require
+  - Fixed auto-mapping bug (was adding .yaml.yaml, now returns base name only)
   - Reuses existing ETL pipeline (validator, transformer, loader)
   - Complete setup guide in CLOUDMAILIN_SETUP.md
   - Test script provided: test_cloudmailin_webhook.py
+- 2025-10-16: **Added Webhook Activity dashboard**:
+  - New `/webhook-activity` page shows all CloudMailin requests in real-time
+  - Displays email details, attachments, files processed/skipped/failed, and status
+  - Links to load_history records for detailed ETL job tracking
+  - Created webhook_log table to persist webhook request history
+- 2025-10-16: **Implemented REPLACE mode for duplicate prevention**:
+  - Automatically deletes existing data for partition_date before loading new data
+  - Prevents duplicates when daily reports are reloaded at 7pm
+  - Shows "Replaced X existing rows" progress message when duplicates found
+  - Ensures daily refreshes work correctly without manual data cleanup
 
 ## User Preferences
 - Flask framework preferred over Streamlit

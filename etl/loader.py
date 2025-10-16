@@ -44,6 +44,19 @@ class BulkLoader:
             load_id = self._start_load(cursor, load_date, table_name, file_name, mapping_file)
         
         try:
+            # REPLACE MODE: Delete existing data for this partition_date before loading
+            self._update_progress(cursor, load_id, 'Checking for duplicates', 50)
+            
+            delete_query = sql.SQL("DELETE FROM {} WHERE _partition_date = %s").format(
+                sql.Identifier(*table_name.split('.'))
+            )
+            cursor.execute(delete_query, (load_date,))
+            deleted_count = cursor.rowcount
+            
+            if deleted_count > 0:
+                self._update_progress(cursor, load_id, f'Replaced {deleted_count} existing rows', 55)
+                print(f"REPLACE MODE: Deleted {deleted_count} existing rows for partition_date={load_date}")
+            
             self._update_progress(cursor, load_id, 'Loading to database', 60)
             
             # Get column names from CSV header
