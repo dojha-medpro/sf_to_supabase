@@ -6,6 +6,7 @@ partition:
   from_field: "created_at"     # Created Date/Time → timestamptz → _partition_date = created_at::date
 
 columns:
+  "Form Submission: ID": form_submission_id   # New key field
   "Form Submission: Form Submission Name": form_submission_name
   "Created Date/Time": created_at
   "Contact/Candidate": contact_candidate
