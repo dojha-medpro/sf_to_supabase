@@ -309,15 +309,15 @@ def auto_detect_mapping(filename: str):
     filename_lower = filename.lower()
     
     mapping_patterns = {
-        'contact': 'contacts.yaml',
-        'candidate': 'contacts.yaml',
-        'form submission': 'form_submission.yaml',  # Match "form submissions" or "form_submission"
-        'job_applicant_history': 'job_applicant_history_events.yaml',
-        'job_applicant': 'job_applicants.yaml',
-        'applicant': 'job_applicants.yaml',
-        'contacts_with_jobs': 'contacts_with_jobs_joined.yaml',
-        'jobs_and_placement': 'jobs_and_placement.yaml',
-        'placement_history': 'placement_history_events.yaml',
+        'contact': 'contacts',
+        'candidate': 'contacts',
+        'form submission': 'form_submission',  # Match "form submissions" or "form_submission"
+        'job_applicant_history': 'job_applicant_history_events',
+        'job_applicant': 'job_applicants',
+        'applicant': 'job_applicants',
+        'contacts_with_jobs': 'contacts_with_jobs_joined',
+        'jobs_and_placement': 'jobs_and_placement',
+        'placement_history': 'placement_history_events',
     }
     
     for pattern, mapping_file in mapping_patterns.items():
@@ -580,7 +580,11 @@ def cloudmailin_webhook():
         load_ids = [r.get('load_id') for r in results if r.get('load_id')]
         
         import psycopg2
-        conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+        # Fix SSL connection issue with Supabase pooler by adding sslmode
+        db_url = os.environ.get('DATABASE_URL', '')
+        if db_url and 'sslmode' not in db_url:
+            db_url += '?sslmode=require' if '?' not in db_url else '&sslmode=require'
+        conn = psycopg2.connect(db_url)
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO webhook_log 
@@ -615,7 +619,11 @@ def cloudmailin_webhook():
         # Log failed webhook request
         try:
             import psycopg2
-            conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+            # Fix SSL connection issue with Supabase pooler by adding sslmode
+            db_url = os.environ.get('DATABASE_URL', '')
+            if db_url and 'sslmode' not in db_url:
+                db_url += '?sslmode=require' if '?' not in db_url else '&sslmode=require'
+            conn = psycopg2.connect(db_url)
             cur = conn.cursor()
             cur.execute("""
                 INSERT INTO webhook_log 
