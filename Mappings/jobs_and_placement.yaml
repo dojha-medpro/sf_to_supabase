@@ -38,7 +38,7 @@ coercions:
   original_placement_start_date: "date"
   orientation_start_date: "date"
   last_modified_at: "timestamptz"
-  end_of_assignment_survey_returned: "boolean"
+  end_of_assignment_survey_returned: "date"  # Changed from boolean - stores date survey was returned
   international_placement_active: "boolean"
   duration_of_assignment: "integer"   # set to "text" if source not numeric
   bill_rate_base: "numeric"
