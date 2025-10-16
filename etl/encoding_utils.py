@@ -5,6 +5,7 @@ import chardet
 def detect_encoding(file_path: str) -> tuple[str, str]:
     """
     Detect the encoding of a file with fallback handling.
+    OPTIMIZED: Only reads first 100KB for detection instead of entire file.
     
     Args:
         file_path: Path to the file
@@ -14,8 +15,9 @@ def detect_encoding(file_path: str) -> tuple[str, str]:
     """
     encodings_to_try = ['utf-8', 'windows-1252', 'iso-8859-1', 'latin-1', 'cp1252']
     
+    # Read only first 100KB for encoding detection (much faster for large files)
     with open(file_path, 'rb') as f:
-        raw_data = f.read()
+        raw_data = f.read(100 * 1024)  # 100KB sample
     
     result = chardet.detect(raw_data)
     detected = result.get('encoding', '')
@@ -40,6 +42,7 @@ def detect_encoding(file_path: str) -> tuple[str, str]:
             except UnicodeDecodeError:
                 return 'utf-8', 'replace'
     
+    # Fallback: try common encodings on the sample
     for encoding in encodings_to_try:
         try:
             raw_data.decode(encoding)
