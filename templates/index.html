@@ -33,9 +33,14 @@
                 <small>The load snapshot date (defaults to today)</small>
             </div>
             
-            <button type="submit" class="btn-primary">
+            <button type="submit" class="btn-primary" id="submitBtn">
                 🚀 Upload & Process
             </button>
+            
+            <div id="processingIndicator" class="processing-indicator" style="display: none;">
+                <div class="spinner"></div>
+                <p>Processing your file... This may take a few moments for large files.</p>
+            </div>
         </form>
     </div>
     
@@ -60,5 +65,21 @@
 
 <script>
 document.getElementById('partition_date').valueAsDate = new Date();
+
+document.querySelector('form').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('submitBtn');
+    const processingIndicator = document.getElementById('processingIndicator');
+    
+    const fileInput = document.getElementById('csv_file');
+    const mappingSelect = document.getElementById('mapping');
+    
+    if (!fileInput.files.length || !mappingSelect.value) {
+        return;
+    }
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '⏳ Processing...';
+    processingIndicator.style.display = 'block';
+});
 </script>
 {% endblock %}
