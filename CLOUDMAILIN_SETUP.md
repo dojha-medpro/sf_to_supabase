@@ -28,20 +28,20 @@ To find your Replit domain:
 
 ## Step 3: Configure Webhook Security (REQUIRED)
 
-**⚠️ Security First!** The webhook requires authentication to prevent unauthorized access.
+**⚠️ Security First!** The webhook uses HTTP Basic Authentication (CloudMailin's recommended approach).
 
-1. **Generate a secure webhook token**:
+1. **Generate a secure password**:
    ```bash
-   # Generate a random token (use any method)
+   # Generate a random password (use any method)
    openssl rand -hex 32
    # Example output: a1b2c3d4e5f6...
    ```
 
-2. **Add token to Replit Secrets**:
+2. **Add password to Replit Secrets**:
    - In Replit, click "Tools" → "Secrets"
    - Add new secret:
-     - Key: `CLOUDMAILIN_WEBHOOK_TOKEN`
-     - Value: `[your-generated-token]`
+     - Key: `CLOUDMAILIN_PASSWORD`
+     - Value: `[your-generated-password]`
    - Click "Add Secret"
 
 3. **Restart your Flask app** to load the new environment variable
@@ -50,17 +50,20 @@ To find your Replit domain:
 
 ### Basic Settings:
 1. **Email Address**: Choose your custom CloudMailin email (e.g., `salesforce@yourdomain.cloudmailin.net`)
-2. **Target URL**: Paste your webhook URL: `https://[YOUR-REPLIT-DOMAIN]/webhook/cloudmailin`
+2. **Target URL**: Use Basic Auth format:
+   ```
+   https://cloudmailin:[YOUR-PASSWORD]@[YOUR-REPLIT-DOMAIN]/webhook/cloudmailin
+   ```
+   Example:
+   ```
+   https://cloudmailin:a1b2c3d4e5f6@abc123.replit.dev/webhook/cloudmailin
+   ```
+   Replace `[YOUR-PASSWORD]` with the password from Step 3
 3. **HTTP Format**: Select **"JSON (Normalized)"**
 4. **HTTP Method**: POST
 5. **Status**: Enabled
 
-### Security Settings (REQUIRED):
-6. **Custom HTTP Headers**:
-   - Click "Add Custom Header"
-   - Header Name: `X-CloudMailin-Token`
-   - Header Value: `[your-generated-token]` (same as CLOUDMAILIN_WEBHOOK_TOKEN)
-   - This authenticates CloudMailin's requests to your webhook
+**Note**: No custom headers needed! Basic Auth is built into the URL.
 
 ### Attachment Settings (Recommended):
 For large CSV files, configure cloud storage to avoid payload size limits:

@@ -445,19 +445,40 @@ def cloudmailin_webhook():
     """Receive emails from CloudMailin with CSV attachments.
     
     Security:
-        - Requires X-CloudMailin-Token header for authentication
-        - Validates token against CLOUDMAILIN_WEBHOOK_TOKEN environment variable
+        - Uses HTTP Basic Authentication (CloudMailin recommended approach)
+        - Validates credentials against CLOUDMAILIN_USERNAME and CLOUDMAILIN_PASSWORD
+        - Configure CloudMailin URL as: https://username:password@your-domain/webhook/cloudmailin
     """
-    # Security: Verify webhook authentication token (FAIL CLOSED)
-    webhook_token = os.environ.get('CLOUDMAILIN_WEBHOOK_TOKEN')
+    # Security: Verify HTTP Basic Auth credentials (FAIL CLOSED)
+    auth_username = os.environ.get('CLOUDMAILIN_USERNAME', 'cloudmailin')
+    # Use existing CLOUDMAILIN_WEBHOOK_TOKEN as password for backward compatibility
+    auth_password = os.environ.get('CLOUDMAILIN_PASSWORD') or os.environ.get('CLOUDMAILIN_WEBHOOK_TOKEN')
     
-    if not webhook_token:
-        app.logger.error("CLOUDMAILIN_WEBHOOK_TOKEN not configured - rejecting request")
+    if not auth_password:
+        app.logger.error("CLOUDMAILIN_PASSWORD or CLOUDMAILIN_WEBHOOK_TOKEN not configured - rejecting request")
         return jsonify({'status': 'error', 'message': 'Webhook not configured'}), 500
     
-    provided_token = request.headers.get('X-CloudMailin-Token')
-    if not provided_token or provided_token != webhook_token:
-        app.logger.warning(f"Unauthorized webhook attempt from {request.remote_addr}")
+    # Parse Authorization header
+    auth_header = request.headers.get('Authorization', '')
+    
+    if not auth_header.startswith('Basic '):
+        app.logger.warning(f"Missing Basic Auth from {request.remote_addr}")
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
+    
+    try:
+        import base64
+        # Decode base64 credentials
+        encoded_credentials = auth_header[6:]  # Remove "Basic " prefix
+        decoded = base64.b64decode(encoded_credentials).decode('utf-8')
+        provided_username, provided_password = decoded.split(':', 1)
+        
+        # Validate credentials
+        if provided_username != auth_username or provided_password != auth_password:
+            app.logger.warning(f"Invalid credentials from {request.remote_addr}")
+            return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
+            
+    except Exception as e:
+        app.logger.warning(f"Auth parsing error from {request.remote_addr}: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
     
     try:
