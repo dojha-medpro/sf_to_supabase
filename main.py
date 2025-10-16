@@ -47,6 +47,20 @@ def update_progress(load_id: int, stage: str, progress: int):
     cursor.close()
     conn.close()
 
+def update_progress_and_status(load_id: int, stage: str, progress: int, status: str):
+    """Update progress and status for a load."""
+    import psycopg2
+    conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE load_history 
+        SET current_stage = %s, progress_percent = %s, status = %s, completed_at = %s
+        WHERE id = %s
+    """, (stage, progress, status, datetime.now() if status in ('success', 'failed') else None, load_id))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
 def create_load_record(filename: str, mapping_name: str, partition_date_str: str, target_table: str) -> int:
     """Create initial load record and return load_id."""
     import psycopg2
@@ -72,26 +86,22 @@ def upload_file():
     """Handle CSV file upload and processing."""
     
     if 'csv_file' not in request.files:
-        flash('No file uploaded', 'error')
-        return redirect(url_for('index'))
+        return jsonify({'success': False, 'error': 'No file uploaded'}), 400
     
     file = request.files['csv_file']
     mapping_name = request.form.get('mapping')
     partition_date_str = request.form.get('partition_date', datetime.now().strftime('%Y-%m-%d'))
     
     if not file.filename or file.filename == '':
-        flash('No file selected', 'error')
-        return redirect(url_for('index'))
+        return jsonify({'success': False, 'error': 'No file selected'}), 400
     
     if not mapping_name:
-        flash('No mapping selected', 'error')
-        return redirect(url_for('index'))
+        return jsonify({'success': False, 'error': 'No mapping selected'}), 400
     
     try:
         partition_date = datetime.strptime(partition_date_str, '%Y-%m-%d').date()
     except ValueError:
-        flash('Invalid partition date format. Use YYYY-MM-DD', 'error')
-        return redirect(url_for('index'))
+        return jsonify({'success': False, 'error': 'Invalid partition date format. Use YYYY-MM-DD'}), 400
     
     filename = secure_filename(file.filename)
     upload_path = UPLOAD_FOLDER / filename
@@ -115,11 +125,15 @@ def upload_file():
             quarantine_path = QUARANTINE_FOLDER / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
             shutil.move(upload_path, quarantine_path)
             
-            update_progress(load_id, 'Failed: QA validation errors', 100)
             error_report = '\n'.join(errors)
+            update_progress_and_status(load_id, 'Failed: QA validation errors', 100, 'failed')
             notifier.notify_failure(filename, f"QA validation failed: {error_report}", str(quarantine_path))
-            flash(f'❌ QA validation failed. File quarantined.\n\nErrors:\n{error_report}', 'error')
-            return redirect(url_for('index'))
+            
+            return jsonify({
+                'success': False,
+                'load_id': load_id,
+                'error': f'QA validation failed. File quarantined.\n\nErrors:\n{error_report}'
+            }), 400
         
         update_progress(load_id, 'Transforming data', 30)
         transformer = CSVTransformer(mapping)
@@ -143,20 +157,22 @@ def upload_file():
             target_table,
             partition_date_str,
             filename,
-            mapping_name
+            mapping_name,
+            load_id
         )
         
         upload_path.unlink(missing_ok=True)
         transformed_path.unlink(missing_ok=True)
         
-        update_progress(load_id, 'Complete', 100)
+        update_progress_and_status(load_id, 'Complete', 100, 'success')
         notifier.notify_success(filename, loaded_rows, target_table)
-        flash(f'✅ Successfully loaded {loaded_rows} rows to {target_table}', 'success')
-        flash(f'📊 Statistics: {stats["total_rows"]} rows processed', 'info')
         
-        response = redirect(url_for('index'))
-        response.headers['X-Load-ID'] = str(load_id)
-        return response
+        return jsonify({
+            'success': True,
+            'load_id': load_id,
+            'rows_loaded': loaded_rows,
+            'message': f'Successfully loaded {loaded_rows} rows to {target_table}'
+        })
         
     except Exception as e:
         quarantine_path = None
@@ -164,20 +180,17 @@ def upload_file():
             quarantine_path = QUARANTINE_FOLDER / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
             shutil.move(upload_path, quarantine_path)
         
-        update_progress(load_id, f'Failed: {str(e)[:50]}', 100)
+        update_progress_and_status(load_id, f'Failed: {str(e)[:50]}', 100, 'failed')
         notifier.notify_failure(filename, str(e), str(quarantine_path) if quarantine_path else None)
-        flash(f'❌ Error processing file: {str(e)}', 'error')
         
         import traceback
         print(f"Error details:\n{traceback.format_exc()}")
         
-        response = redirect(url_for('index'))
-        response.headers['X-Load-ID'] = str(load_id)
-        return response
-    
-    response = redirect(url_for('index'))
-    response.headers['X-Load-ID'] = str(load_id)
-    return response
+        return jsonify({
+            'success': False,
+            'load_id': load_id,
+            'error': str(e)
+        }), 500
 
 
 @app.route('/history')

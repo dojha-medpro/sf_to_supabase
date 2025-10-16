@@ -16,7 +16,7 @@ class BulkLoader:
             raise ValueError("DATABASE_URL environment variable not set")
     
     def load_csv(self, csv_file: str, table_name: str, 
-                 load_date: str, file_name: str, mapping_file: str) -> int:
+                 load_date: str, file_name: str, mapping_file: str, load_id: Optional[int] = None) -> int:
         """
         Load a CSV file to a staging table using PostgreSQL COPY.
         
@@ -40,10 +40,11 @@ class BulkLoader:
         conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         cursor = conn.cursor()
         
-        load_id = self._start_load(cursor, load_date, table_name, file_name, mapping_file)
+        if load_id is None:
+            load_id = self._start_load(cursor, load_date, table_name, file_name, mapping_file)
         
         try:
-            self._update_progress(cursor, load_id, 'Loading to database', 25)
+            self._update_progress(cursor, load_id, 'Loading to database', 60)
             
             with open(csv_file, 'r', encoding='utf-8') as f:
                 copy_query = sql.SQL("COPY {} FROM STDIN WITH CSV HEADER DELIMITER ','").format(
@@ -51,7 +52,7 @@ class BulkLoader:
                 )
                 cursor.copy_expert(copy_query.as_string(cursor), f)
             
-            self._update_progress(cursor, load_id, 'Counting rows', 75)
+            self._update_progress(cursor, load_id, 'Counting rows', 85)
             
             count_query = sql.SQL("SELECT COUNT(*) FROM {} WHERE _file_name = %s").format(
                 sql.Identifier(*table_name.split('.'))
@@ -60,7 +61,7 @@ class BulkLoader:
             result = cursor.fetchone()
             row_count = result[0] if result else 0
             
-            self._update_progress(cursor, load_id, 'Finalizing', 90)
+            self._update_progress(cursor, load_id, 'Complete', 95)
             self._complete_load(cursor, load_id, row_count, 'success')
             
             cursor.close()

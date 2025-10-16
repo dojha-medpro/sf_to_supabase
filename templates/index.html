@@ -129,15 +129,21 @@ document.querySelector('form').addEventListener('submit', async function(e) {
             body: formData
         });
         
-        const loadId = response.headers.get('X-Load-ID');
+        const data = await response.json();
         
-        if (loadId) {
-            progressInterval = setInterval(() => checkProgress(loadId), 500);
+        if (data.success && data.load_id) {
+            progressInterval = setInterval(() => checkProgress(data.load_id), 500);
+        } else if (data.load_id) {
+            progressInterval = setInterval(() => checkProgress(data.load_id), 500);
         } else {
-            window.location.reload();
+            alert(data.error || 'Upload failed');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '🚀 Upload & Process';
+            processingIndicator.style.display = 'none';
         }
     } catch (error) {
         console.error('Upload error:', error);
+        alert('Upload error: ' + error.message);
         window.location.reload();
     }
 });

@@ -37,6 +37,8 @@ ETL Data Pipeline Application (Python Flask + PostgreSQL)
 
 ### 3. Web Interface
 - Upload page with file selector, mapping dropdown, partition date picker
+- **Real-time progress tracking**: Visual progress bar shows current stage (upload, validation, transformation, loading) with percentage
+- AJAX polling updates progress every 500ms during processing
 - Load history dashboard showing past runs with status and error details
 - Beautiful gradient UI with responsive design
 - Flash messages for user feedback
@@ -87,6 +89,7 @@ ETL Data Pipeline Application (Python Flask + PostgreSQL)
 - 2025-10-16: Added SQL injection protection with table whitelist
 - 2025-10-16: Configured deployment with gunicorn
 - 2025-10-16: Connected to user's Supabase project (lkmtcqgoytxqpqhhfoon.supabase.co)
+- 2025-10-16: **Added real-time progress tracking** with visual progress bar, stage indicators, and AJAX polling (5min+ processing now shows live progress)
 
 ## User Preferences
 - Flask framework preferred over Streamlit
