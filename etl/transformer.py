@@ -97,28 +97,31 @@ class CSVTransformer:
             return value
         
         rules = coercion.split('|')
+        result: Any = value
         
         for rule in rules:
             rule = rule.strip()
             
             if rule == 'trim':
-                value = str(value).strip() if value else value
+                result = str(result).strip() if result else result
             elif rule == 'lower':
-                value = str(value).lower() if value else value
+                result = str(result).lower() if result else result
             elif rule == 'boolean':
-                result = self._to_boolean(value)
-                value = result if result is not None else value
+                bool_result = self._to_boolean(str(result))
+                if bool_result is not None:
+                    result = bool_result
             elif rule == 'date':
-                result = self._to_date(value)
-                value = result if result is not None else value
+                date_result = self._to_date(str(result))
+                result = date_result if date_result is not None else result
             elif rule == 'timestamptz':
-                result = self._to_timestamptz(value)
-                value = result if result is not None else value
+                ts_result = self._to_timestamptz(str(result))
+                result = ts_result if ts_result is not None else result
             elif rule == 'numeric':
-                result = self._to_numeric(value)
-                value = result if result is not None else value
+                num_result = self._to_numeric(str(result))
+                if num_result is not None:
+                    result = num_result
         
-        return value
+        return result
     
     def _to_boolean(self, value: str) -> Optional[bool]:
         """Convert string to boolean."""
