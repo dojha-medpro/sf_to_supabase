@@ -96,6 +96,11 @@ ETL Data Pipeline Application (Python Flask + PostgreSQL)
   - Single load_history record per job with status transitions (running → success/failed)
   - BulkLoader accepts load_id parameter to update existing records (no duplicates)
   - Graceful error handling with visual feedback for all failure scenarios
+- 2025-10-16: **Optimized validator for large files (317K+ rows)**:
+  - Single-pass validation (was reading file 4x, now reads only 1x) - massive performance improvement
+  - Progress updates every 50K rows during validation (user sees "Validating row 50,000..." messages)
+  - Reduced validation time from 10+ minutes to ~1-2 minutes for large files
+  - Memory-efficient: only stores minimal bookkeeping data
 
 ## User Preferences
 - Flask framework preferred over Streamlit
