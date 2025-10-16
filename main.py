@@ -160,13 +160,17 @@ def upload_file():
         if transform_errors:
             flash(f'⚠️ Transformation warnings: {len(transform_errors)} errors', 'warning')
         
+        # Get natural key from mapping for UPSERT logic
+        natural_key = mapping.get('natural_key', [])
+        
         loaded_rows = loader.load_csv(
             str(transformed_path),
             target_table,
             partition_date_str,
             filename,
             mapping_name,
-            load_id
+            load_id,
+            natural_key
         )
         
         upload_path.unlink(missing_ok=True)
@@ -442,13 +446,17 @@ def process_csv_attachment(filename: str, upload_path: Path, mapping_name: str, 
         
         update_progress(load_id, 'Loading to Supabase', 50)
         
+        # Get natural key from mapping for UPSERT logic
+        natural_key = mapping.get('natural_key', [])
+        
         loaded_rows = loader.load_csv(
             str(transformed_path),
             target_table,
             partition_date.strftime('%Y-%m-%d'),
             filename,
             mapping_name,
-            load_id
+            load_id,
+            natural_key
         )
         
         upload_path.unlink(missing_ok=True)

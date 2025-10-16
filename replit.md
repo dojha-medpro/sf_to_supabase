@@ -156,11 +156,20 @@ ETL Data Pipeline Application (Python Flask + PostgreSQL)
   - Displays email details, attachments, files processed/skipped/failed, and status
   - Links to load_history records for detailed ETL job tracking
   - Created webhook_log table to persist webhook request history
-- 2025-10-16: **Implemented REPLACE mode for duplicate prevention**:
-  - Automatically deletes existing data for partition_date before loading new data
-  - Prevents duplicates when daily reports are reloaded at 7pm
-  - Shows "Replaced X existing rows" progress message when duplicates found
-  - Ensures daily refreshes work correctly without manual data cleanup
+- 2025-10-16: **Implemented UPSERT mode for incremental daily loads**:
+  - Smart load strategy based on natural keys defined in YAML mappings
+  - **UPSERT mode** (tables with natural keys): Deletes old records by natural key, inserts updated records
+    - form_submission: UPSERT by `form_submission_name`
+    - contacts: UPSERT by `contact_sfid`
+    - job_applicant: UPSERT by `job_applicant_sfid`
+    - contacts_with_jobs: UPSERT by `job_applicant_sfid`
+    - jobs_and_placements: UPSERT by `job_sfid`
+  - **INSERT mode** (history/event tables): Appends all records (no deduplication)
+    - job_applicant_history: INSERT only (event stream)
+    - placement_history: INSERT only (event stream)
+  - Works with existing schema (no PRIMARY KEY changes needed)
+  - Handles daily incremental reports: inserts new records, updates existing ones
+  - Temp table approach: safe, transactional, high-performance
 
 ## User Preferences
 - Flask framework preferred over Streamlit

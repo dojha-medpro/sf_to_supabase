@@ -16,7 +16,8 @@ class BulkLoader:
             raise ValueError("DATABASE_URL environment variable not set")
     
     def load_csv(self, csv_file: str, table_name: str, 
-                 load_date: str, file_name: str, mapping_file: str, load_id: Optional[int] = None) -> int:
+                 load_date: str, file_name: str, mapping_file: str, 
+                 load_id: Optional[int] = None, natural_key: Optional[list] = None) -> int:
         """
         Load a CSV file to a staging table using PostgreSQL COPY.
         
@@ -44,35 +45,87 @@ class BulkLoader:
             load_id = self._start_load(cursor, load_date, table_name, file_name, mapping_file)
         
         try:
-            # REPLACE MODE: Delete existing data for this partition_date before loading
-            self._update_progress(cursor, load_id, 'Checking for duplicates', 50)
-            
-            delete_query = sql.SQL("DELETE FROM {} WHERE _partition_date = %s").format(
-                sql.Identifier(*table_name.split('.'))
-            )
-            cursor.execute(delete_query, (load_date,))
-            deleted_count = cursor.rowcount
-            
-            if deleted_count > 0:
-                self._update_progress(cursor, load_id, f'Replaced {deleted_count} existing rows', 55)
-                print(f"REPLACE MODE: Deleted {deleted_count} existing rows for partition_date={load_date}")
-            
-            self._update_progress(cursor, load_id, 'Loading to database', 60)
-            
             # Get column names from CSV header
             with open(csv_file, 'r', encoding='utf-8') as f:
                 first_line = f.readline().strip()
                 csv_columns = first_line.split(',')
             
-            # Build COPY command with explicit column list
-            with open(csv_file, 'r', encoding='utf-8') as f:
-                columns_sql = sql.SQL(', ').join([sql.Identifier(col) for col in csv_columns])
-                copy_query = sql.SQL("COPY {} ({}) FROM STDIN WITH CSV HEADER DELIMITER ','").format(
-                    sql.Identifier(*table_name.split('.')),
-                    columns_sql
+            # Determine load strategy based on natural_key
+            if natural_key and len(natural_key) > 0:
+                # UPSERT MODE: Delete existing records, then insert new ones
+                # This works without schema changes (no need to alter PRIMARY KEYs)
+                
+                self._update_progress(cursor, load_id, 'UPSERT: Loading to temp table', 50)
+                
+                # Create temp table with same structure as target
+                temp_table = f"temp_{table_name.split('.')[-1]}_{load_id}"
+                create_temp = sql.SQL("CREATE TEMP TABLE {} AS SELECT * FROM {} WHERE 1=0").format(
+                    sql.Identifier(temp_table),
+                    sql.Identifier(*table_name.split('.'))
                 )
-                cursor.copy_expert(copy_query.as_string(cursor), f)
-            
+                cursor.execute(create_temp)
+                
+                # Load CSV to temp table using COPY
+                with open(csv_file, 'r', encoding='utf-8') as f:
+                    columns_sql = sql.SQL(', ').join([sql.Identifier(col) for col in csv_columns])
+                    copy_query = sql.SQL("COPY {} ({}) FROM STDIN WITH CSV HEADER DELIMITER ','").format(
+                        sql.Identifier(temp_table),
+                        columns_sql
+                    )
+                    cursor.copy_expert(copy_query.as_string(cursor), f)
+                
+                self._update_progress(cursor, load_id, 'UPSERT: Removing old records', 65)
+                
+                # Delete existing records with matching natural keys
+                # Build WHERE clause: WHERE (natural_key_col1, natural_key_col2) IN (SELECT ... FROM temp)
+                key_cols = sql.SQL(', ').join([sql.Identifier(col) for col in natural_key])
+                delete_query = sql.SQL("""
+                    DELETE FROM {target} 
+                    WHERE ({keys}) IN (
+                        SELECT {keys} FROM {temp}
+                    )
+                """).format(
+                    target=sql.Identifier(*table_name.split('.')),
+                    keys=key_cols,
+                    temp=sql.Identifier(temp_table)
+                )
+                cursor.execute(delete_query)
+                deleted_count = cursor.rowcount
+                
+                if deleted_count > 0:
+                    self._update_progress(cursor, load_id, f'UPSERT: Deleted {deleted_count} old records', 70)
+                    print(f"UPSERT: Deleted {deleted_count} existing records")
+                
+                self._update_progress(cursor, load_id, 'UPSERT: Inserting new records', 75)
+                
+                # Insert all records from temp table
+                insert_query = sql.SQL("""
+                    INSERT INTO {target} ({cols})
+                    SELECT {cols} FROM {temp}
+                """).format(
+                    target=sql.Identifier(*table_name.split('.')),
+                    cols=columns_sql,
+                    temp=sql.Identifier(temp_table)
+                )
+                cursor.execute(insert_query)
+                
+                self._update_progress(cursor, load_id, 'UPSERT: Complete', 85)
+                print(f"UPSERT MODE: Merged data using natural key: {natural_key}")
+                
+            else:
+                # INSERT MODE: No natural key, just append all records (for history/event tables)
+                self._update_progress(cursor, load_id, 'INSERT: Loading to database', 60)
+                
+                with open(csv_file, 'r', encoding='utf-8') as f:
+                    columns_sql = sql.SQL(', ').join([sql.Identifier(col) for col in csv_columns])
+                    copy_query = sql.SQL("COPY {} ({}) FROM STDIN WITH CSV HEADER DELIMITER ','").format(
+                        sql.Identifier(*table_name.split('.')),
+                        columns_sql
+                    )
+                    cursor.copy_expert(copy_query.as_string(cursor), f)
+                
+                print(f"INSERT MODE: Appended all records (no natural key)")
+                
             self._update_progress(cursor, load_id, 'Counting rows', 85)
             
             count_query = sql.SQL("SELECT COUNT(*) FROM {} WHERE _file_name = %s").format(
