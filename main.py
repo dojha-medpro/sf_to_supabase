@@ -33,9 +33,92 @@ notifier = NotificationService()
 
 @app.route('/')
 def index():
-    """Homepage with upload form."""
+    """Homepage with upload form and webhook dashboard."""
     mappings = mapper.get_available_mappings()
-    return render_template('index.html', mappings=mappings)
+    
+    # Get webhook statistics for dashboard
+    webhook_stats = {
+        'today': {'success': 0, 'failed': 0, 'total_files': 0},
+        'last_7_days': [],
+        'recent_failures': []
+    }
+    
+    try:
+        conn = connect_with_retry()
+        cursor = conn.cursor()
+        
+        # Today's stats
+        cursor.execute("""
+            SELECT 
+                status,
+                COUNT(*) as count,
+                SUM(ARRAY_LENGTH(files_processed, 1)) as total_files
+            FROM webhook_log
+            WHERE DATE(received_at) = CURRENT_DATE
+            GROUP BY status
+        """)
+        
+        for row in cursor.fetchall():
+            status, count, total_files = row
+            if status == 'success':
+                webhook_stats['today']['success'] = count
+                webhook_stats['today']['total_files'] = total_files or 0
+            elif status in ('failed', 'partial'):
+                webhook_stats['today']['failed'] += count
+        
+        # Last 7 days trend
+        cursor.execute("""
+            SELECT 
+                DATE(received_at) as date,
+                COUNT(*) FILTER (WHERE status = 'success') as success_count,
+                COUNT(*) FILTER (WHERE status IN ('failed', 'partial')) as failed_count,
+                SUM(ARRAY_LENGTH(files_processed, 1)) as total_files
+            FROM webhook_log
+            WHERE received_at >= CURRENT_DATE - INTERVAL '7 days'
+            GROUP BY DATE(received_at)
+            ORDER BY date DESC
+        """)
+        
+        webhook_stats['last_7_days'] = [
+            {
+                'date': row[0].strftime('%b %d'),
+                'success': row[1],
+                'failed': row[2],
+                'total_files': row[3] or 0
+            }
+            for row in cursor.fetchall()
+        ]
+        
+        # Recent failures (last 5)
+        cursor.execute("""
+            SELECT 
+                received_at,
+                from_email,
+                subject,
+                error_message
+            FROM webhook_log
+            WHERE status IN ('failed', 'partial')
+            ORDER BY received_at DESC
+            LIMIT 5
+        """)
+        
+        webhook_stats['recent_failures'] = [
+            {
+                'time': row[0].strftime('%b %d, %I:%M %p'),
+                'from': row[1],
+                'subject': row[2],
+                'error': row[3]
+            }
+            for row in cursor.fetchall()
+        ]
+        
+        cursor.close()
+        conn.close()
+        
+    except Exception as e:
+        print(f"Error fetching webhook stats: {e}")
+    
+    return render_template('index.html', mappings=mappings, webhook_stats=webhook_stats)
 
 
 def update_progress(load_id: int, stage: str, progress: int):

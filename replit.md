@@ -96,6 +96,11 @@ ETL Data Pipeline Application (Python Flask + PostgreSQL)
 - Data dictionary and ERD generation
 
 ## Recent Changes
+- 2025-10-16: **Added Webhook Dashboard to home page**:
+  - Daily summary showing successful/failed webhooks and files processed
+  - Last 7 days trend table with success/fail counts
+  - Recent failures section with error details
+  - Real-time visibility into automated 6 AM loads
 - 2025-10-16: Built complete bulk load ETL pipeline
 - 2025-10-16: Created 7 Supabase staging tables (contacts, form_submission, job_applicant, jobs_and_placements, contacts_with_jobs, job_applicant_history, placement_history)
 - 2025-10-16: Implemented QA validation framework

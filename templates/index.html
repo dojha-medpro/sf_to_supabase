@@ -7,6 +7,83 @@
     <h1>Bulk Load CSV Files</h1>
     <p class="subtitle">Upload Salesforce report CSVs and load them into Supabase staging tables</p>
     
+    <!-- Webhook Dashboard -->
+    <div class="dashboard-section">
+        <h2>📊 Daily Webhook Activity</h2>
+        
+        <div class="dashboard-cards">
+            <!-- Today's Summary -->
+            <div class="dashboard-card">
+                <h3>Today's Summary</h3>
+                <div class="stats-grid">
+                    <div class="stat-item success">
+                        <div class="stat-value">{{ webhook_stats.today.success }}</div>
+                        <div class="stat-label">Successful Webhooks</div>
+                    </div>
+                    <div class="stat-item {% if webhook_stats.today.failed > 0 %}danger{% else %}muted{% endif %}">
+                        <div class="stat-value">{{ webhook_stats.today.failed }}</div>
+                        <div class="stat-label">Failed Webhooks</div>
+                    </div>
+                    <div class="stat-item info">
+                        <div class="stat-value">{{ webhook_stats.today.total_files }}</div>
+                        <div class="stat-label">Files Processed</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Last 7 Days Trend -->
+            <div class="dashboard-card">
+                <h3>Last 7 Days</h3>
+                {% if webhook_stats.last_7_days %}
+                <div class="trend-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Success</th>
+                                <th>Failed</th>
+                                <th>Files</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for day in webhook_stats.last_7_days %}
+                            <tr>
+                                <td>{{ day.date }}</td>
+                                <td class="success-text">{{ day.success }}</td>
+                                <td class="{% if day.failed > 0 %}danger-text{% else %}muted-text{% endif %}">{{ day.failed }}</td>
+                                <td>{{ day.total_files }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="no-data">No webhook activity in the last 7 days</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Recent Failures -->
+        {% if webhook_stats.recent_failures %}
+        <div class="dashboard-card alert-card">
+            <h3>⚠️ Recent Failures</h3>
+            <div class="failures-list">
+                {% for failure in webhook_stats.recent_failures %}
+                <div class="failure-item">
+                    <div class="failure-time">{{ failure.time }}</div>
+                    <div class="failure-subject">{{ failure.subject }}</div>
+                    <div class="failure-from">From: {{ failure.from }}</div>
+                    {% if failure.error %}
+                    <div class="failure-error">{{ failure.error[:100] }}...</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <a href="{{ url_for('webhook_activity') }}" class="btn-link">View All Webhook Activity →</a>
+        </div>
+        {% endif %}
+    </div>
+    
     <div class="upload-card">
         <form method="POST" action="/upload" enctype="multipart/form-data">
             <div class="form-group">
