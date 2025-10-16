@@ -7,8 +7,8 @@ partition:
 
 columns:
   "Created Date/Time": created_at
-  "Job Applicant: Job Applicant ID": job_applicant_sfid
-  "Job Applicant: ID": job_applicant_alt_id
+  "Job Applicant: Job Applicant ID": job_applicant_alt_id
+  "Job Applicant: ID": job_applicant_sfid
   "Candidate": candidate
   "Account": account
   "Applicant Source": applicant_source
