@@ -1,0 +1,3 @@
+/reports/*
+!/reports/README.md
+!/reports/.gitkeep
