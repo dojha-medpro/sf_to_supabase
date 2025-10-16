@@ -2,6 +2,7 @@
 import csv
 from typing import Dict, List, Any, Tuple
 from collections import Counter
+from .encoding_utils import detect_encoding
 
 
 class QAValidator:
@@ -38,7 +39,9 @@ class QAValidator:
         errors.extend(key_errors)
         stats['missing_keys'] = missing_count
         
-        with open(csv_file, 'r', encoding='utf-8') as f:
+        encoding = detect_encoding(csv_file)
+        
+        with open(csv_file, 'r', encoding=encoding) as f:
             reader = csv.DictReader(f)
             stats['total_rows'] = sum(1 for _ in reader)
         
@@ -50,7 +53,9 @@ class QAValidator:
         """Validate CSV headers match mapping."""
         errors = []
         
-        with open(csv_file, 'r', encoding='utf-8') as f:
+        encoding = detect_encoding(csv_file)
+        
+        with open(csv_file, 'r', encoding=encoding) as f:
             reader = csv.DictReader(f)
             
             if not reader.fieldnames:
@@ -79,7 +84,9 @@ class QAValidator:
         
         keys_seen = []
         
-        with open(csv_file, 'r', encoding='utf-8') as f:
+        encoding = detect_encoding(csv_file)
+        
+        with open(csv_file, 'r', encoding=encoding) as f:
             reader = csv.DictReader(f)
             
             for row_num, row in enumerate(reader, start=2):
@@ -106,7 +113,9 @@ class QAValidator:
         if not self.natural_key:
             return errors, 0
         
-        with open(csv_file, 'r', encoding='utf-8') as f:
+        encoding = detect_encoding(csv_file)
+        
+        with open(csv_file, 'r', encoding=encoding) as f:
             reader = csv.DictReader(f)
             
             for row_num, row in enumerate(reader, start=2):

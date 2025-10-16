@@ -5,6 +5,7 @@ from datetime import datetime, date
 from dateutil import parser as date_parser
 from io import StringIO
 from typing import Dict, List, Any, Optional
+from .encoding_utils import detect_encoding
 
 
 class CSVTransformer:
@@ -28,7 +29,9 @@ class CSVTransformer:
         errors = []
         row_count = 0
         
-        with open(input_file, 'r', encoding='utf-8') as infile:
+        encoding = detect_encoding(input_file)
+        
+        with open(input_file, 'r', encoding=encoding) as infile:
             reader = csv.DictReader(infile)
             
             if not reader.fieldnames:

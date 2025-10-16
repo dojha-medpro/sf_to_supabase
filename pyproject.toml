@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
+    "chardet>=5.2.0",
     "flask>=3.1.2",
     "gunicorn>=23.0.0",
     "markdown>=3.9",
