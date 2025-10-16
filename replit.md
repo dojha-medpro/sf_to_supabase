@@ -101,6 +101,11 @@ ETL Data Pipeline Application (Python Flask + PostgreSQL)
   - Progress updates every 50K rows during validation (user sees "Validating row 50,000..." messages)
   - Reduced validation time from 10+ minutes to ~1-2 minutes for large files
   - Memory-efficient: only stores minimal bookkeeping data
+- 2025-10-16: **Fixed encoding detection bottleneck**:
+  - Was reading entire 50+ MB file for encoding detection (VERY slow)
+  - Now reads only first 100KB sample (0.028 seconds vs minutes)
+  - Uses 'replace' mode for UTF-8 to gracefully handle any encoding issues
+  - Improved frontend error handling to show error messages properly
 
 ## User Preferences
 - Flask framework preferred over Streamlit

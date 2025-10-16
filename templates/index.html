@@ -129,6 +129,12 @@ document.querySelector('form').addEventListener('submit', async function(e) {
             body: formData
         });
         
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Server returned non-JSON response. Please check the server logs.');
+        }
+        
         const data = await response.json();
         
         if (data.success && data.load_id) {
@@ -144,7 +150,9 @@ document.querySelector('form').addEventListener('submit', async function(e) {
     } catch (error) {
         console.error('Upload error:', error);
         alert('Upload error: ' + error.message);
-        window.location.reload();
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '🚀 Upload & Process';
+        processingIndicator.style.display = 'none';
     }
 });
 </script>
