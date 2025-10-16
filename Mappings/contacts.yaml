@@ -1,5 +1,5 @@
 source_report: "Contacts (Contact/Candidate)"
-target_object: "contact"
+target_object: "contacts"
 natural_key: ["contact_sfid"]
 
 partition:

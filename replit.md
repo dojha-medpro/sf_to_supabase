@@ -17,7 +17,14 @@ ETL Data Pipeline Application (Python Flask + PostgreSQL)
 ## Features Implemented (2025-10-16)
 
 ### 1. Database Schema
-- Created 4 staging tables in Supabase: `contacts`, `form_submission`, `job_applicant`, `jobs_and_placements`
+- Created 7 staging tables in Supabase:
+  - `staging.contacts` - Contact/candidate master data
+  - `staging.form_submission` - Form submission events
+  - `staging.job_applicant` - Job applicant records
+  - `staging.jobs_and_placements` - Jobs and placement data
+  - `staging.contacts_with_jobs` - Job applicant-centric view with contact context
+  - `staging.job_applicant_history` - Field/event history for job applicants
+  - `staging.placement_history` - Field/event history for placements
 - Each table includes operational metadata: `_partition_date`, `_file_name`, `_source_report`, `_loaded_at`
 - `load_history` table tracks all ETL runs with status and error details
 
@@ -75,10 +82,11 @@ ETL Data Pipeline Application (Python Flask + PostgreSQL)
 
 ## Recent Changes
 - 2025-10-16: Built complete bulk load ETL pipeline
-- 2025-10-16: Created Supabase staging tables
+- 2025-10-16: Created 7 Supabase staging tables (contacts, form_submission, job_applicant, jobs_and_placements, contacts_with_jobs, job_applicant_history, placement_history)
 - 2025-10-16: Implemented QA validation framework
-- 2025-10-16: Added SQL injection protection
+- 2025-10-16: Added SQL injection protection with table whitelist
 - 2025-10-16: Configured deployment with gunicorn
+- 2025-10-16: Connected to user's Supabase project (lkmtcqgoytxqpqhhfoon.supabase.co)
 
 ## User Preferences
 - Flask framework preferred over Streamlit

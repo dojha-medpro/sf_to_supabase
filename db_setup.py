@@ -154,6 +154,82 @@ def create_staging_tables():
                 _loaded_at timestamptz DEFAULT NOW(),
                 PRIMARY KEY (job_sfid, _partition_date)
             )
+        """,
+        
+        "staging.contacts_with_jobs": """
+            CREATE TABLE IF NOT EXISTS staging.contacts_with_jobs (
+                job_applicant_sfid text NOT NULL,
+                job_applicant_alt_id text,
+                contact_sfid text,
+                full_name text,
+                email text,
+                account_name text,
+                applicant_source text,
+                job_title text,
+                job_status text,
+                submitted_to_hm_at timestamptz,
+                days_with_hiring_manager integer,
+                time_am_to_hiring_manager text,
+                time_sa_to_hiring_manager text,
+                date_offer_received date,
+                interview_availability text,
+                job_city_state text,
+                job_source text,
+                last_modified_at timestamptz,
+                _partition_date date NOT NULL,
+                _file_name text NOT NULL,
+                _source_report text NOT NULL,
+                _extract_ts timestamptz,
+                _mapping_version text,
+                _raw_hash text,
+                _loaded_at timestamptz DEFAULT NOW(),
+                PRIMARY KEY (job_applicant_sfid, _partition_date)
+            )
+        """,
+        
+        "staging.job_applicant_history": """
+            CREATE TABLE IF NOT EXISTS staging.job_applicant_history (
+                job_applicant_sfid text NOT NULL,
+                job_applicant_alt_id text,
+                candidate text,
+                field_event text NOT NULL,
+                old_value text,
+                new_value text,
+                edited_at timestamptz NOT NULL,
+                _partition_date date NOT NULL,
+                _file_name text NOT NULL,
+                _source_report text NOT NULL,
+                _extract_ts timestamptz,
+                _mapping_version text,
+                _raw_hash text,
+                _loaded_at timestamptz DEFAULT NOW(),
+                PRIMARY KEY (job_applicant_sfid, edited_at, field_event, _partition_date)
+            )
+        """,
+        
+        "staging.placement_history": """
+            CREATE TABLE IF NOT EXISTS staging.placement_history (
+                placement_sfid text NOT NULL,
+                placement_alt_id text,
+                owner_name text,
+                placement_created_at timestamptz,
+                candidate text,
+                job_applicant text,
+                field_event text NOT NULL,
+                old_value text,
+                new_value text,
+                edited_at timestamptz NOT NULL,
+                last_modified_at timestamptz,
+                job_applicant_stage text,
+                _partition_date date NOT NULL,
+                _file_name text NOT NULL,
+                _source_report text NOT NULL,
+                _extract_ts timestamptz,
+                _mapping_version text,
+                _raw_hash text,
+                _loaded_at timestamptz DEFAULT NOW(),
+                PRIMARY KEY (placement_sfid, edited_at, field_event, _partition_date)
+            )
         """
     }
     

@@ -27,7 +27,10 @@ class BulkLoader:
             'staging.contacts',
             'staging.form_submission', 
             'staging.job_applicant',
-            'staging.jobs_and_placements'
+            'staging.jobs_and_placements',
+            'staging.contacts_with_jobs',
+            'staging.job_applicant_history',
+            'staging.placement_history'
         }
         
         if table_name not in allowed_tables:
@@ -50,7 +53,8 @@ class BulkLoader:
                 sql.Identifier(*table_name.split('.'))
             )
             cursor.execute(count_query, (file_name,))
-            row_count = cursor.fetchone()[0]
+            result = cursor.fetchone()
+            row_count = result[0] if result else 0
             
             self._complete_load(cursor, load_id, row_count, 'success')
             
@@ -75,7 +79,10 @@ class BulkLoader:
             RETURNING id
         """, (load_date, table_name, file_name, mapping_file, 'running', datetime.now()))
         
-        return cursor.fetchone()[0]
+        result = cursor.fetchone()
+        if not result:
+            raise RuntimeError("Failed to create load_history record")
+        return result[0]
     
     def _complete_load(self, cursor, load_id: int, rows_loaded: int, 
                       status: str, error_message: Optional[str] = None):
