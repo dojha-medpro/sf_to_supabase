@@ -13,6 +13,9 @@ class QAValidator:
         self.column_mapping = mapping.get('columns', {})
         self.natural_key = mapping.get('natural_key', [])
         self.reject_rules = mapping.get('reject_rules', [])
+        
+        # Create reverse mapping: target_name -> source_name
+        self.reverse_mapping = {v: k for k, v in self.column_mapping.items()}
     
     def validate_file(self, csv_file: str, progress_callback=None) -> Tuple[bool, List[str], Dict[str, Any]]:
         """
@@ -67,19 +70,23 @@ class QAValidator:
                     progress_percent = min(10 + int((stats['total_rows'] / 500000) * 15), 25)
                     progress_callback(progress_percent, f'Validating row {stats["total_rows"]:,}...')
                 
-                # Check for duplicate keys
+                # Check for duplicate keys and missing required fields
                 if self.natural_key:
-                    key_values = tuple(row.get(col, '') for col in self.natural_key)
+                    # Map target column names to source column names
+                    source_key_cols = [self.reverse_mapping.get(k, k) for k in self.natural_key]
+                    
+                    # Get key values using SOURCE column names from CSV
+                    key_values = tuple(row.get(col, '') for col in source_key_cols)
                     keys_seen.append(key_values)
                     
                     # Check for missing required fields
-                    for key_col in self.natural_key:
-                        value = row.get(key_col, '').strip()
+                    for target_col, source_col in zip(self.natural_key, source_key_cols):
+                        value = row.get(source_col, '').strip()
                         
                         if not value or value in ('', 'NULL', 'N/A', 'null'):
                             stats['missing_keys'] += 1
                             if len(missing_key_errors) < 10:
-                                missing_key_errors.append(f"Row {row_num}: Missing required field '{key_col}'")
+                                missing_key_errors.append(f"Row {row_num}: Missing required field '{source_col}'")
         
         # Process duplicate keys
         if self.natural_key and keys_seen:
