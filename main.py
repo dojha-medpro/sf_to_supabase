@@ -392,7 +392,9 @@ def auto_detect_mapping(filename: str):
         'contact': 'contacts',
         'candidate': 'contacts',
         'form submission': 'form_submission',
+        'fsdr': 'form_submission',  # Form Submission Daily Report (abbreviated)
         'placement history': 'placement_history_events',  # Match "Placement History Daily Report"
+        'phdr': 'placement_history_events',  # Placement History Daily Report (abbreviated)
         'job applicant history': 'job_applicant_history_events',  # Match "Job Applicant History"
         'job_applicant_history': 'job_applicant_history_events',
         'job_applicant': 'job_applicants',

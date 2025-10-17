@@ -96,6 +96,10 @@ ETL Data Pipeline Application (Python Flask + PostgreSQL)
 - Data dictionary and ERD generation
 
 ## Recent Changes
+- 2025-10-17: **Added abbreviated filename patterns to auto-detection**:
+  - PHDR → placement_history_events.yaml (Placement History Daily Report)
+  - FSDR → form_submission.yaml (Form Submission Daily Report)
+  - Fixes skipped files in today's 6 AM webhook loads
 - 2025-10-16: **Added Webhook Dashboard to home page**:
   - Daily summary showing successful/failed webhooks and files processed
   - Last 7 days trend table with success/fail counts
